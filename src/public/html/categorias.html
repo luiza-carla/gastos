@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Categorias</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <main>
+    <div class="container">
+      <h2>Gerenciar Categorias</h2>
+      <form id="formCategoria">
+        <input placeholder="Nome da categoria" id="nomeCategoria" required/>
+        <select id="tipoCategoria" required>
+          <option value="receita">Receita</option>
+          <option value="despesa">Despesa</option>
+        </select>
+        <button type="submit">Criar Categoria</button>
+      </form>
+      <div id="categoriasContainer"></div>
+    </div>
+  </main>
+
+  <script type="module" src="../js/categoria.js"></script>
+  <script type="module" src="../js/init.js"></script>
+</body>
+</html>

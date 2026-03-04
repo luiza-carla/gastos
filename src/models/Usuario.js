@@ -18,10 +18,7 @@ const UsuarioSchema = new mongoose.Schema({
     required: true 
   },
 
-  salario: { 
-    type: Number, 
-    required: true 
-  }
+ salarios: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Salario' }],
 
 }, { timestamps: true });
 

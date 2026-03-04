@@ -1,23 +1,27 @@
-document.getElementById('formLogin').onsubmit = async (e) => {
+import { setToken, apiFetch } from './config.js';
+import { verificarAutenticacao } from './auth.js';
+
+verificarAutenticacao();
+
+const formLogin = document.getElementById('formLogin');
+const baseUrlUsuarios = window.location.origin + '/usuarios';
+
+formLogin.onsubmit = async e => {
   e.preventDefault();
+  try {
+    const email = document.getElementById('loginEmail').value;
+    const senha = document.getElementById('loginSenha').value;
 
-  const res = await fetch(`${baseUrl}/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      email: document.getElementById('loginEmail').value,
-      senha: document.getElementById('loginSenha').value
-    })
-  });
+    const data = await apiFetch(`${baseUrlUsuarios}/login`, {
+      method: 'POST',
+      body: JSON.stringify({ email, senha })
+    });
 
-  const data = await res.json();
-  if (res.ok && data.token) {
-    token = data.token;
-    localStorage.setItem('token', token);
-    alert('Login feito com sucesso!');
-
-    window.location.href = 'inicio.html';
-  } else {
-    alert(data.mensagem || 'Erro no login');
+    if (data.token) {
+      setToken(data.token);
+      window.location.href = '/html/inicio.html';
+    }
+  } catch (err) {
+    alert(err.message);
   }
 };

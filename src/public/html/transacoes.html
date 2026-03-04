@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Transações</title>
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+
+  <main>
+    <div class="container">
+      <h2>Nova Transação</h2>
+      <form id="formTransacao">
+  <input placeholder="Título" id="titulo" required />
+  <input placeholder="Valor" id="valor" type="number" required />
+  <select id="tipo">
+    <option value="entrada">Entrada</option>
+    <option value="saida">Saída</option>
+  </select>
+  <select id="conta"></select>
+  <select id="categoria"></select>
+
+  <!-- NOVOS CAMPOS -->
+  <select id="status">
+    <option value="pago">Pago</option>
+    <option value="pendente">Pendente</option>
+  </select>
+  <select id="recorrencia">
+    <option value="nenhuma">Nenhuma</option>
+    <option value="mensal">Mensal</option>
+  </select>
+  <input type="number" id="totalParcelas" placeholder="Total de Parcelas" min="1" value="1"/>
+  <input type="number" id="parcelaAtual" placeholder="Parcela Atual" min="1" value="1"/>
+
+  <button type="submit">Adicionar</button>
+</form>
+      <div id="transacoes"></div>
+    </div>
+  </main>
+
+  <script type="module" src="../js/conta.js"></script>
+  <script type="module" src="../js/categoria.js"></script>
+  <script type="module" src="../js/transacao.js"></script>
+  <script type="module" src="../js/init.js"></script>
+</body>
+</html>

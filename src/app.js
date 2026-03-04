@@ -13,4 +13,16 @@ app.use(express.static(path.join(__dirname, 'public')));
 const userRoutes = require('./routes/user.routes');
 app.use('/usuarios', userRoutes);
 
+const contaRoutes = require('./routes/conta.routes');
+app.use('/contas', contaRoutes);
+
+const categoriaRoutes = require('./routes/category.routes');
+app.use('/categorias', categoriaRoutes);
+
+const transacaoRoutes = require('./routes/transacao.routes');
+app.use('/transacoes', transacaoRoutes);
+
+const salarioRoutes = require('./routes/salario.routes');
+app.use('/salarios', salarioRoutes);
+
 module.exports = app;

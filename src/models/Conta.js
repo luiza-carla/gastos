@@ -4,7 +4,7 @@ const ContaSchema = new mongoose.Schema({
 
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Usuario',
     required: true
   },
 

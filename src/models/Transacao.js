@@ -4,7 +4,7 @@ const TransacaoSchema = new mongoose.Schema({
 
   usuario: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'Usuario',
     required: true
   },
 
@@ -32,7 +32,7 @@ const TransacaoSchema = new mongoose.Schema({
 
   categoria: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
+    ref: 'Categoria',
     required: true
   },
 

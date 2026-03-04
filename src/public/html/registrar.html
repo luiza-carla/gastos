@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="utf-8">
   <title>Registro</title>
   <link rel="stylesheet" href="../css/style.css">
 </head>
@@ -8,16 +9,16 @@
   <div class="container">
     <h2>Registrar Usuário</h2>
     <form id="formRegistrar">
-      <input placeholder="Nome" id="nome" required/>
-      <input placeholder="Email" id="email" type="email" required/>
-      <input placeholder="Senha" id="senha" type="password" required/>
-      <input placeholder="Salário" id="salario" type="number" required/>
+      <input placeholder="Nome" id="nome" required />
+      <input placeholder="Email" id="email" type="email" required />
+      <input placeholder="Senha" id="senha" type="password" required />
       <button type="submit">Registrar</button>
     </form>
     <p>Já tem conta? <a href="login.html">Login</a></p>
   </div>
 
-  <script src="../config/config.js"></script>
-  <script src="../js/registrar.js"></script>
+  <script type="module" src="../config/config.js"></script>
+  <script type="module" src="../js/registrar.js"></script>
+  <script type="module" src="../js/init.js"></script>
 </body>
 </html>
