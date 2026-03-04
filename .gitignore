@@ -1,0 +1,7 @@
+# Node modules (dependências)
+node_modules/
+
+# Arquivos de ambiente
+.env
+
+*.txt
