@@ -34,6 +34,12 @@ const SalarioSchema = new mongoose.Schema({
 
   dataRecebimento: {
     type: Date
+  },
+
+  conta: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Conta',
+    required: false
   }
 
 }, { timestamps: true });

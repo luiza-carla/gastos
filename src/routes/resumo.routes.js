@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const CategoriaController = require('../controllers/CategoriaController');
+
+const ResumoController = require('../controllers/ResumoController');
 const autenticacao = require('../middlewares/autentication');
 
-router.get('/', autenticacao, CategoriaController.listar);
+router.get('/', autenticacao, ResumoController.obterResumo);
 
 module.exports = router;

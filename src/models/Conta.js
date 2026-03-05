@@ -19,7 +19,7 @@ const ContaSchema = new mongoose.Schema({
     required: true
   },
 
-  saldoInicial: {
+  saldo: {
     type: Number,
     default: 0
   },

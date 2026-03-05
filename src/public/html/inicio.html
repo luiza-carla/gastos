@@ -6,89 +6,45 @@
   <link rel="stylesheet" href="../css/style.css">
 </head>
 <body>
+
   <script type="module" src="../js/auth.js"></script>
 
   <main>
     <div class="container">
+
       <h2>Resumo Financeiro</h2>
-      <p>Saldo total: R$ <span id="saldoTotal">0,00</span></p>
-    </div>
 
-    <div class="container">
-      <h3>Contas</h3>
-      <form id="formConta">
-        <input placeholder="Nome da conta" id="nome" required/>
-        <select id="tipo">
-          <option value="corrente">Corrente</option>
-          <option value="credito">Crédito</option>
-          <option value="dinheiro">Dinheiro</option>
-          <option value="investimento">Investimento</option>
-        </select>
-        <input placeholder="Saldo Inicial" id="saldoInicial" type="number"/>
-        <button type="submit">Criar Conta</button>
-      </form>
-      <div id="contas"></div>
-    </div>
+      <div class="resumo-financeiro">
 
-    <div class="container">
-      <h3>Categorias</h3>
-      <form id="formCategoria">
-        <input placeholder="Nome da categoria" id="nomeCategoria" required/>
-        <select id="tipoCategoria" required>
-          <option value="receita">Receita</option>
-          <option value="despesa">Despesa</option>
-        </select>
-        <button type="submit">Criar Categoria</button>
-      </form>
-      <div id="categoriasContainer"></div>
-    </div>
+        <p>💰 Salários recebidos: 
+          <b>R$ <span id="totalSalarios">0,00</span></b>
+        </p>
 
-    <div class="container">
-      <h3>Salário</h3>
-      <form id="formSalario">
-        <input placeholder="Valor do salário" id="valorSalario" type="number" required/>
-        <select id="frequencia">
-          <option value="mensal">Mensal</option>
-          <option value="semanal">Semanal</option>
-          <option value="diario">Diário</option>
-          <option value="anual">Anual</option>
-          <option value="outra">Outra</option>
-        </select>
-        <input type="date" id="dataRecebimento" placeholder="Data de Recebimento"/>
-        <button type="submit">Adicionar Salário</button>
-      </form>
-      <div id="salariosContainer"></div>
-    </div>
+        <p>📈 Total de entradas: 
+          <b>R$ <span id="totalEntradas">0,00</span></b>
+        </p>
 
-    <div class="container">
-      <h3>Nova Transação</h3>
-      <form id="formTransacao">
-        <input placeholder="Título" id="titulo" required />
-        <input placeholder="Valor" id="valor" type="number" required />
-        <select id="tipo">
-          <option value="entrada">Entrada</option>
-          <option value="saida">Saída</option>
-        </select>
-        <select id="conta"></select>
-        <select id="categoria"></select>
-        <select id="status">
-          <option value="pago">Pago</option>
-          <option value="pendente">Pendente</option>
-        </select>
-        <select id="recorrencia">
-          <option value="nenhuma">Nenhuma</option>
-          <option value="mensal">Mensal</option>
-        </select>
-        <input type="number" id="totalParcelas" placeholder="Total de Parcelas" min="1" value="1"/>
-        <input type="number" id="parcelaAtual" placeholder="Parcela Atual" min="1" value="1"/>
+        <p>📉 Total de saídas: 
+          <b>R$ <span id="totalSaidas">0,00</span></b>
+        </p>
 
-        <button type="submit">Adicionar</button>
-      </form>
-      <div id="transacoes"></div>
+        <hr>
+
+        <p style="font-size:18px;">
+          <b>Saldo total: R$ <span id="saldoTotal">0,00</span></b>
+        </p>
+
+        <hr>
+
+        <div id="saldoPorConta"></div>
+
+      </div>
+
     </div>
   </main>
 
   <script type="module" src="../js/inicio.js"></script>
   <script type="module" src="../js/init.js"></script>
+
 </body>
 </html>

@@ -1,9 +1,15 @@
 require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/database');
+const garantirCategoriasPadrao = require('./utils/seedCategoria');
 
-connectDB();
+async function iniciarServidor() {
+  await connectDB();
+  await garantirCategoriasPadrao();
 
-app.listen(process.env.PORT, () => {
-  console.log(`Servidor rodando na porta ${process.env.PORT}`);
-});
+  app.listen(process.env.PORT, () => {
+    console.log('Servidor rodando');
+  });
+}
+
+iniciarServidor();

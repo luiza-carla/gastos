@@ -46,10 +46,12 @@ const TransacaoSchema = new mongoose.Schema({
     default: true
   },
 
-  tags: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Tag'
-  }],
+  tags: [
+      {
+        type: String
+      }
+    ]
+  ,
 
   recorrencia: {
     type: String,

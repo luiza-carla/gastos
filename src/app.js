@@ -25,4 +25,7 @@ app.use('/transacoes', transacaoRoutes);
 const salarioRoutes = require('./routes/salario.routes');
 app.use('/salarios', salarioRoutes);
 
+const resumoRoutes = require('./routes/resumo.routes');
+app.use('/resumo', resumoRoutes);
+
 module.exports = app;

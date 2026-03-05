@@ -1,49 +1,83 @@
 const Transacao = require('../models/Transacao');
 
 class TransacaoController {
-async criar(req, res) {
-  try {
-    const { conta, titulo, valor, tipo, categoria, data, status, recorrencia, parcelamento, tags } = req.body;
 
-    const novaTransacao = await Transacao.create({
-      usuario: req.user.id,
-      conta,
-      titulo,
-      valor,
-      tipo,
-      categoria,
-      data: data || Date.now(),
-      status: status || 'pago',
-      recorrencia: recorrencia || 'nenhuma',
-      parcelamento: parcelamento || { totalParcelas: 1, parcelaAtual: 1 },
-      tags: tags || []
-    });
-
-    res.status(201).json(novaTransacao);
-  } catch (err) {
-    res.status(400).json({ mensagem: err.message });
-  }
-}
-
-  async listar(req, res) {
+  async criar(req, res) {
     try {
-      const transacoes = await Transacao.find({ usuario: req.user.id })
+
+      const {
+        conta,
+        titulo,
+        valor,
+        tipo,
+        categoria,
+        data,
+        status,
+        recorrencia,
+        parcelamento,
+        tags
+      } = req.body;
+
+      const novaTransacao = await Transacao.create({
+        usuario: req.user.id,
+        conta,
+        titulo,
+        valor,
+        tipo,
+        categoria,
+        data: data || Date.now(),
+        status: status || 'pago',
+        recorrencia: recorrencia || 'nenhuma',
+        parcelamento: {
+          totalParcelas: parcelamento?.totalParcelas || 1,
+          parcelaAtual: parcelamento?.parcelaAtual || 1
+        },
+        tags: tags || []
+      });
+
+      const transacaoCompleta = await Transacao.findById(novaTransacao._id)
         .populate('conta', 'nome tipo')
         .populate('categoria', 'nome cor tipo');
-      res.json(transacoes);
+
+      res.status(201).json(transacaoCompleta);
+
     } catch (err) {
       res.status(400).json({ mensagem: err.message });
     }
   }
 
+  async listar(req, res) {
+    try {
+
+      const transacoes = await Transacao.find({ usuario: req.user.id })
+        .populate('conta', 'nome tipo')
+        .populate('categoria', 'nome cor tipo')
+        .sort({ data: -1 });
+
+      res.json(transacoes);
+
+    } catch (err) {
+      res.status(500).json({ mensagem: err.message });
+    }
+  }
+
   async atualizar(req, res) {
     try {
+
       const transacao = await Transacao.findOneAndUpdate(
         { _id: req.params.id, usuario: req.user.id },
         req.body,
         { new: true }
-      );
+      )
+        .populate('conta', 'nome tipo')
+        .populate('categoria', 'nome cor tipo');
+
+      if (!transacao) {
+        return res.status(404).json({ mensagem: 'Transação não encontrada' });
+      }
+
       res.json(transacao);
+
     } catch (err) {
       res.status(400).json({ mensagem: err.message });
     }
@@ -51,12 +85,23 @@ async criar(req, res) {
 
   async deletar(req, res) {
     try {
-      await Transacao.findOneAndDelete({ _id: req.params.id, usuario: req.user.id });
+
+      const transacao = await Transacao.findOneAndDelete({
+        _id: req.params.id,
+        usuario: req.user.id
+      });
+
+      if (!transacao) {
+        return res.status(404).json({ mensagem: 'Transação não encontrada' });
+      }
+
       res.json({ mensagem: 'Transação deletada' });
+
     } catch (err) {
-      res.status(400).json({ mensagem: err.message });
+      res.status(500).json({ mensagem: err.message });
     }
   }
+
 }
 
 module.exports = new TransacaoController();

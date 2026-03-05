@@ -19,8 +19,17 @@
   </select>
   <select id="conta"></select>
   <select id="categoria"></select>
+  <div id="tagsArea">
 
-  <!-- NOVOS CAMPOS -->
+    <div id="tagsContainer"></div>
+
+    <div class="tag-input-area">
+      <input id="tagInput" placeholder="Digite uma tag">
+      <button type="button" id="btnAddTag">OK</button>
+      <button type="button" id="btnNovaTag">+</button>
+    </div>
+
+  </div>
   <select id="status">
     <option value="pago">Pago</option>
     <option value="pendente">Pendente</option>
@@ -33,14 +42,10 @@
   <input type="number" id="parcelaAtual" placeholder="Parcela Atual" min="1" value="1"/>
 
   <button type="submit">Adicionar</button>
-</form>
+  </form>
       <div id="transacoes"></div>
     </div>
   </main>
-
-  <script type="module" src="../js/conta.js"></script>
-  <script type="module" src="../js/categoria.js"></script>
-  <script type="module" src="../js/transacao.js"></script>
   <script type="module" src="../js/init.js"></script>
 </body>
 </html>

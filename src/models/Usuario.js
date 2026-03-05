@@ -1,7 +1,6 @@
 const mongoose = require('mongoose');
 
 const UsuarioSchema = new mongoose.Schema({
-
   nome: { 
     type: String, 
     required: true 
@@ -18,7 +17,7 @@ const UsuarioSchema = new mongoose.Schema({
     required: true 
   },
 
- salarios: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Salario' }],
+  salarios: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Salario' }],
 
 }, { timestamps: true });
 

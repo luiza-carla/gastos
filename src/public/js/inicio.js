@@ -1,29 +1,32 @@
-import { criarConta, popularSelectContas, listarContas } from './conta.js';
-import { criarCategoria, listarCategorias, inicializarCategorias } from './categoria.js';
-import { criarTransacao, listarTransacoes } from './transacao.js';
-import { criarSalario, listarSalarios } from './salario.js';
+import { apiFetch } from './config.js';
 
-(async function inicializar() {
-  await listarContas();
-  await listarCategorias();
-  await listarSalarios();
+console.log("inicio.js carregou");
 
-  await inicializarCategorias();
-  await popularSelectContas();
+export async function carregarResumo() {
+  try {
+    const dados = await apiFetch(window.location.origin + '/resumo');
+    console.log("RESUMO RECEBIDO:", dados);
 
-  criarConta('formConta', async () => {
-    await popularSelectContas();
-  });
+    const saldoEl = document.getElementById('saldoTotal');
+    const salariosEl = document.getElementById('totalSalarios');
+    const entradasEl = document.getElementById('totalEntradas');
+    const saidasEl = document.getElementById('totalSaidas');
 
-  criarCategoria('formCategoria', async () => {
-    await listarCategorias();
-  });
+    if (saldoEl) saldoEl.textContent = dados.saldo.toFixed(2);
+    if (salariosEl) salariosEl.textContent = dados.salarios.toFixed(2);
+    if (entradasEl) entradasEl.textContent = dados.entradas.toFixed(2);
+    if (saidasEl) saidasEl.textContent = dados.saidas.toFixed(2);
 
-  criarSalario('formSalario', async () => {
-    await listarSalarios();
-  });
+    const saldoPorContaEl = document.getElementById('saldoPorConta');
+    if (saldoPorContaEl && dados.saldoPorConta) {
+      let html = '';
+      dados.saldoPorConta.forEach(c => {
+        html += `<p>🏦 ${c.nome} (${c.tipo}): R$ ${c.saldo.toFixed(2)}</p>`;
+      });
+      saldoPorContaEl.innerHTML = html;
+    }
 
-  criarTransacao('formTransacao');
-
-  listarTransacoes();
-})();
+  } catch (erro) {
+    console.error("Erro ao carregar resumo:", erro);
+  }
+}
