@@ -6,13 +6,14 @@ export function abrirModalConfirmacao({ titulo, mensagem, onConfirmar }) {
 
   const tituloEl = document.getElementById('modalTitulo');
 
-  tituloEl.textContent = titulo;
+  tituloEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: var(--vermelho-escuro);"></i> ${titulo}`;
   setHTMLById('modalConteudo', `<p style="margin: 0; padding: 10px 0; color: #666;">${mensagem}</p>`);
 
   confirmarCallback = onConfirmar;
 
   hideElement(document.getElementById('modalFooterEditar'));
   showElement(document.getElementById('modalFooterConfirmar'));
+  hideElement(document.getElementById('modalFooterErro'));
 
   showModal();
 }

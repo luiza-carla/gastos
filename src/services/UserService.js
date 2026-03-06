@@ -21,11 +21,20 @@ class UsuarioService {
       salario
     });
 
+    const token = jwt.sign(
+      { id: novoUsuario._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
     return {
-      id: novoUsuario._id,
-      nome: novoUsuario.nome,
-      email: novoUsuario.email,
-      salario: novoUsuario.salario
+      token,
+      usuario: {
+        id: novoUsuario._id,
+        nome: novoUsuario.nome,
+        email: novoUsuario.email,
+        salario: novoUsuario.salario
+      }
     };
   }
 

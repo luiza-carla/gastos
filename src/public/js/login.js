@@ -1,7 +1,4 @@
 import { setToken, apiFetch } from './config.js';
-import { verificarAutenticacao } from './auth.js';
-
-verificarAutenticacao();
 
 const formLogin = document.getElementById('formLogin');
 const baseUrlUsuarios = window.location.origin + '/usuarios';

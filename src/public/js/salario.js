@@ -1,6 +1,5 @@
 import { apiFetch } from './config.js';
-import { popularSelectContas } from './conta.js';
-import { abrirModal, fecharModal } from './modalEditar.js';
+import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
 import { formatarValor, criarCardsHTML, capitalizar } from './helpers/index.js';
 
@@ -91,9 +90,14 @@ window.deletarSalario = async (id) => {
     titulo: 'Confirmar exclusão',
     mensagem: 'Tem certeza que deseja deletar este salário?',
     onConfirmar: async () => {
-      await apiFetch(`${salarioBaseUrl}/${id}`, { method: 'DELETE' });
-      fecharModal();
-      await listarSalarios();
+      try {
+        await apiFetch(`${salarioBaseUrl}/${id}`, { method: 'DELETE' });
+        fecharModal();
+        await listarSalarios();
+      } catch (err) {
+        fecharModal();
+        abrirModalErro(err.message);
+      }
     }
   });
 };

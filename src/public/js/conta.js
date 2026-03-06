@@ -1,5 +1,5 @@
 import { apiFetch } from './config.js';
-import { abrirModal, fecharModal } from './modalEditar.js';
+import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
 import { formatarValor, criarOpcao, criarCardsHTML, capitalizar } from './helpers/index.js';
 
@@ -112,11 +112,16 @@ window.deletarConta = async id => {
     titulo: 'Confirmar exclusão',
     mensagem: 'Tem certeza que deseja deletar esta conta?',
     onConfirmar: async () => {
-      await apiFetch(`${window.location.origin}/contas/${id}`, {
-        method: 'DELETE'
-      });
-      fecharModal();
-      listarContas();
+      try {
+        await apiFetch(`${window.location.origin}/contas/${id}`, {
+          method: 'DELETE'
+        });
+        fecharModal();
+        listarContas();
+      } catch (err) {
+        fecharModal();
+        abrirModalErro(err.message);
+      }
     }
   });
 };

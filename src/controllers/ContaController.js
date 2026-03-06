@@ -31,7 +31,7 @@ class ContaController {
 
   async deletar(req, res) {
     try {
-      await ContaService.deletar(req.params.id);
+      await ContaService.deletar(req.params.id, req.user.id);
       res.json({ mensagem: 'Conta deletada' });
     } catch (err) {
       res.status(400).json({ mensagem: err.message });

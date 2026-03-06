@@ -1,5 +1,5 @@
 import { apiFetch } from './config.js';
-import { abrirModal, fecharModal } from './modalEditar.js';
+import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
 import { formatarValor, capitalizar, criarCardsHTML, showById, hideById, setDisabledById, showElement, hideElement } from './helpers/index.js';
 
@@ -348,11 +348,16 @@ window.deletarTransacao = async id => {
     titulo: 'Confirmar exclusão',
     mensagem: 'Tem certeza que deseja deletar esta transação?',
     onConfirmar: async () => {
-      await apiFetch(`${window.location.origin}/transacoes/${id}`, {
-        method: 'DELETE'
-      });
-      fecharModal();
-      listarTransacoes();
+      try {
+        await apiFetch(`${window.location.origin}/transacoes/${id}`, {
+          method: 'DELETE'
+        });
+        fecharModal();
+        listarTransacoes();
+      } catch (err) {
+        fecharModal();
+        abrirModalErro(err.message);
+      }
     }
   });
 };

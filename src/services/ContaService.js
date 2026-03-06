@@ -18,7 +18,20 @@ class ContaService {
     return Conta.findByIdAndUpdate(id, dados, { new: true });
   }
 
-  async deletar(id) {
+  async deletar(id, usuarioId) {
+    const Transacao = require('../models/Transacao');
+    const Salario = require('../models/Salario');
+
+    const transCount = await Transacao.countDocuments({ conta: id, usuario: usuarioId });
+    if (transCount > 0) {
+      throw new Error('Não é possível apagar a conta pois existem transações associadas');
+    }
+
+    const salCount = await Salario.countDocuments({ conta: id, usuario: usuarioId });
+    if (salCount > 0) {
+      throw new Error('Não é possível apagar a conta pois existem salários associados');
+    }
+
     return Conta.findByIdAndDelete(id);
   }
 }

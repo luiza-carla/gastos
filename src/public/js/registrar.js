@@ -1,7 +1,4 @@
-import { apiFetch } from './config.js';
-import { verificarAutenticacao } from './auth.js';
-
-verificarAutenticacao();
+import { setToken, apiFetch } from './config.js';
 
 const baseUrl = window.location.origin + '/usuarios';
 
@@ -18,8 +15,10 @@ document.getElementById('formRegistrar').onsubmit = async e => {
       })
     });
 
-    alert('Registrado com sucesso! Faça login.');
-    window.location.href = 'login.html';
+    if (data.token) {
+      setToken(data.token);
+      window.location.href = '/html/inicio.html';
+    }
   } catch (err) {
     alert(err.message || 'Erro ao registrar');
   }

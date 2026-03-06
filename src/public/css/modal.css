@@ -23,11 +23,23 @@
   margin-bottom:15px;
 }
 
+.modal-header h3 i {
+  margin-right: 8px;
+}
+
+#modalTitulo i {
+  margin-right: 8px;
+}
+
 .modal-footer{
   margin-top:20px;
   display:flex;
   justify-content:flex-end;
   gap:10px;
+}
+
+.modal-footer button i {
+  margin-right: 6px;
 }
 
 .btn-danger {
@@ -41,5 +53,13 @@
 }
 
 .btn-danger:hover {
+  background: var(--vermelho-hover);
+}
+
+#modalFooterErro .btn-danger {
+  background: var(--vermelho-escuro);
+}
+
+#modalFooterErro .btn-danger:hover {
   background: var(--vermelho-hover);
 }

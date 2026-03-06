@@ -18,7 +18,15 @@ export async function apiFetch(url, options = {}) {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Erro ${res.status}: ${text}`);
+    try {
+      const json = JSON.parse(text);
+      throw new Error(json.mensagem || text);
+    } catch (e) {
+      if (e.message && e.message !== text) {
+        throw e;
+      }
+      throw new Error(text);
+    }
   }
 
   return res.json();
