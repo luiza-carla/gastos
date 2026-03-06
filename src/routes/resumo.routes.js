@@ -6,4 +6,6 @@ const autenticacao = require('../middlewares/autentication');
 
 router.get('/', autenticacao, ResumoController.obterResumo);
 
+router.get('/projecao', autenticacao, ResumoController.obterProjecao);
+
 module.exports = router;

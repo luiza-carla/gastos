@@ -14,7 +14,7 @@ const SalarioSchema = new mongoose.Schema({
 
   frequencia: {
     type: String,
-    enum: ['mensal', 'semanal', 'diario', 'anual', 'outra'],
+    enum: ['mensal', 'semanal', 'diario', 'anual', 'hora', 'outra'],
     default: 'mensal'
   },
 

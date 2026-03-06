@@ -1,57 +1,25 @@
-const Transacao = require('../models/Transacao');
-const Salario = require('../models/Salario');
-const Conta = require('../models/Conta');
-const mongoose = require('mongoose');
+const ResumoService = require('../services/ResumoService');
 
 class ResumoController {
 
   async obterResumo(req, res) {
     try {
-      const usuarioId = new mongoose.Types.ObjectId(req.user.id);
+      const usuarioId = req.user.id; // string é suficiente para os métodos de serviço
 
-      const contas = await Conta.find({ usuario: usuarioId, ativa: true });
+      const dados = await ResumoService.gerarResumo(usuarioId);
+      res.json(dados);
 
-      const saldoPorConta = contas.map(c => ({
-        id: c._id.toString(),
-        nome: c.nome,
-        tipo: c.tipo,
-        saldo: c.saldo
-      }));
+    } catch (erro) {
+      res.status(500).json({ mensagem: erro.message });
+    }
+  }
 
-      const salarios = await Salario.aggregate([
-        { $match: { usuario: usuarioId } },
-        { $group: { _id: null, total: { $sum: "$valor" } } }
-      ]);
-      const totalSalarios = salarios[0]?.total || 0;
+  async obterProjecao(req, res) {
+    try {
+      const usuarioId = req.user.id;
 
-      const transacoes = await Transacao.find({ usuario: usuarioId });
-
-      let totalEntradas = 0;
-      let totalSaidas = 0;
-
-      transacoes.forEach(t => {
-        const contaIndex = saldoPorConta.findIndex(c => c.id === t.conta?.toString());
-        if (t.tipo === 'entrada') {
-          totalEntradas += t.valor;
-          if (contaIndex >= 0) saldoPorConta[contaIndex].saldo += t.valor;
-        }
-        if (t.tipo === 'saida') {
-          totalSaidas += t.valor;
-          if (contaIndex >= 0) saldoPorConta[contaIndex].saldo -= t.valor;
-        }
-      });
-
-      const saldoContas = saldoPorConta.reduce((acc, c) => acc + c.saldo, 0);
-      const saldo = saldoContas + totalSalarios;
-
-      res.json({
-        saldoContas,
-        saldoPorConta,
-        salarios: totalSalarios,
-        entradas: totalEntradas,
-        saidas: totalSaidas,
-        saldo
-      });
+      const dados = await ResumoService.gerarProjecao(usuarioId);
+      res.json(dados);
 
     } catch (erro) {
       res.status(500).json({ mensagem: erro.message });

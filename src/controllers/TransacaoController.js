@@ -15,7 +15,8 @@ class TransacaoController {
         status,
         recorrencia,
         parcelamento,
-        tags
+        tags,
+        tipoDespesa
       } = req.body;
 
       const novaTransacao = await Transacao.create({
@@ -32,7 +33,8 @@ class TransacaoController {
           totalParcelas: parcelamento?.totalParcelas || 1,
           parcelaAtual: parcelamento?.parcelaAtual || 1
         },
-        tags: tags || []
+        tags: tags || [],
+        tipoDespesa: tipo === 'saida' ? tipoDespesa : undefined
       });
 
       const transacaoCompleta = await Transacao.findById(novaTransacao._id)
@@ -63,10 +65,14 @@ class TransacaoController {
 
   async atualizar(req, res) {
     try {
+      const updateData = { ...req.body };
+      if (updateData.tipo !== 'saida') {
+        delete updateData.tipoDespesa;
+      }
 
       const transacao = await Transacao.findOneAndUpdate(
         { _id: req.params.id, usuario: req.user.id },
-        req.body,
+        updateData,
         { new: true }
       )
         .populate('conta', 'nome tipo')

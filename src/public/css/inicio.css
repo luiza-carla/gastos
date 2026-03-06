@@ -1,0 +1,35 @@
+#btnProjecao{
+  margin-top:15px;
+  background:#84B082;
+}
+
+#btnProjecao:hover{
+  background:#6f9c95;
+}
+
+#modalProjecao .modal-content p{
+  display:flex;
+  justify-content:space-between;
+
+  background:#fafafa;
+
+  padding:12px 14px;
+
+  border-radius:10px;
+
+  margin-bottom:10px;
+}
+
+#projSaldoAtual{
+  color:#2D232E;
+}
+
+#projSaidasPendentes{
+  color:var(--vermelho);
+}
+
+#projSaldoFinal{
+  color:#84B082;
+  font-weight:700;
+  font-size:20px;
+}

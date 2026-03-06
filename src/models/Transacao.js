@@ -36,6 +36,18 @@ const TransacaoSchema = new mongoose.Schema({
     required: true
   },
 
+  tipoDespesa: {
+    type: String,
+    enum: ['essencial', 'eventual', 'opcional'],
+    validate: {
+      validator: function(v) {
+        if (v && this.tipo !== 'saida') return false;
+        return true;
+      },
+      message: 'tipoDespesa só pode ser definido para transações do tipo "saida".'
+    }
+  },
+
   data: {
     type: Date,
     default: Date.now
@@ -47,11 +59,8 @@ const TransacaoSchema = new mongoose.Schema({
   },
 
   tags: [
-      {
-        type: String
-      }
-    ]
-  ,
+    { type: String }
+  ],
 
   recorrencia: {
     type: String,

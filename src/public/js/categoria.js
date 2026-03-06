@@ -1,4 +1,5 @@
 import { apiFetch, getToken } from './config.js';
+import { populateSelect } from './helpers/index.js';
 
 const categoriaBaseUrl = window.location.origin + '/categorias';
 
@@ -11,14 +12,7 @@ export async function listarCategorias() {
   const select = document.getElementById('categoria');
 
   if (select) {
-    select.innerHTML = '';
-
-    categorias.forEach(c => {
-      const option = document.createElement('option');
-      option.value = c._id;
-      option.textContent = `${c.nome}`;
-      select.appendChild(option);
-    });
+    populateSelect(select, categorias, item => item._id, item => item.nome);
   }
 
   return categorias;

@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <title>Início - Controle de Gastos</title>
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="../css/inicio.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
 
@@ -11,35 +12,64 @@
 
   <main>
     <div class="container">
-
       <h2>Resumo Financeiro</h2>
 
       <div class="resumo-financeiro">
 
-        <p>💰 Salários recebidos: 
-          <b>R$ <span id="totalSalarios">0,00</span></b>
-        </p>
+      <p>
+        <span><i class="fa-solid fa-wallet"></i> Saldo</span>
+        <b>R$ <span id="saldo">0,00</span></b>
+      </p>
 
-        <p>📈 Total de entradas: 
-          <b>R$ <span id="totalEntradas">0,00</span></b>
-        </p>
+      <p>
+        <span><i class="fa-solid fa-money-bill-wave"></i> Salários</span>
+        <b>R$ <span id="totalSalarios">0,00</span></b>
+      </p>
 
-        <p>📉 Total de saídas: 
-          <b>R$ <span id="totalSaidas">0,00</span></b>
-        </p>
+      <p>
+        <span><i class="fa-solid fa-university"></i> Saldo nas contas</span>
+        <b>R$ <span id="saldoContas">0,00</span></b>
+      </p>
 
-        <hr>
+      <p>
+        <span><i class="fa-solid fa-arrow-up"></i> Total de entradas</span>
+        <b>R$ <span id="totalEntradas">0,00</span></b>
+      </p>
 
+      <p>
+        <span><i class="fa-solid fa-arrow-down"></i> Total de saídas</span>
+        <b>R$ <span id="totalSaidas">0,00</span></b>
+      </p>
         <p style="font-size:18px;">
-          <b>Saldo total: R$ <span id="saldoTotal">0,00</span></b>
+          <b>Saldo total: R$ <span id="saldoFinal">0,00</span></b>
         </p>
 
-        <hr>
+        <button id="btnProjecao">Ver projeção com pendentes</button>
 
-        <div id="saldoPorConta"></div>
+        <div id="modalProjecao" class="modal" style="display:none;">
+        <div class="modal-content">
 
+    <h3>Projeção de saldo</h3>
+
+    <p>Saldo atual:
+      <b>R$ <span id="projSaldoAtual">0,00</span></b>
+    </p>
+
+    <p>Saídas pendentes:
+      <b>R$ <span id="projSaidasPendentes">0,00</span></b>
+    </p>
+
+    <hr>
+
+    <p style="font-size:18px;">
+      <b>Saldo projetado: R$ <span id="projSaldoFinal">0,00</span></b>
+    </p>
+
+    <button id="fecharModal">Fechar</button>
+
+  </div>
+</div>
       </div>
-
     </div>
   </main>
 

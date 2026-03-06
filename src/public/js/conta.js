@@ -1,31 +1,54 @@
 import { apiFetch } from './config.js';
+import { abrirModal, fecharModal } from './modalEditar.js';
+import { abrirModalConfirmacao } from './modalDeletar.js';
+import { formatarValor, criarOpcao, criarCardsHTML, capitalizar } from './helpers/index.js';
 
-export async function listarContas() {
-  const contas = await apiFetch(window.location.origin + '/contas');
+export async function listarContas(){
 
-  const container = document.getElementById('contas');
-  if (container) {
+const contas = await apiFetch('/contas');
 
-    let html = '';
+const container = document.getElementById('contas');
 
-    contas.forEach(c => {
-      html += `
-        <div>
-          <b>${c.nome}</b> (${c.tipo}) - Saldo: ${c.saldoInicial}
-          <button onclick="editarConta('${c._id}')">Editar</button>
-          <button onclick="deletarConta('${c._id}')">Deletar</button>
-        </div>
-        <hr>
-      `;
-    });
+if (container) {
+  const gerarCard = c => `
+  <div class="conta-card">
 
-    container.innerHTML = html;
-  }
+  <div class="conta-nome">
+  <i class="fa-solid fa-wallet"></i>
+  ${c.nome}
+  </div>
 
-  return contas;
+  <div class="conta-tipo">
+  Tipo: ${capitalizar(c.tipo)}
+  </div>
+
+  <div class="conta-saldo">
+  R$ ${formatarValor(c.saldo)}
+  </div>
+
+  <div class="conta-acoes">
+
+  <button class="btn-editar" onclick="editarConta('${c._id}')">
+  <i class="fa-solid fa-pen"></i>
+  </button>
+
+  <button class="btn-deletar" onclick="deletarConta('${c._id}')">
+  <i class="fa-solid fa-trash"></i>
+  </button>
+
+  </div>
+
+  </div>
+  `;
+
+  container.innerHTML = criarCardsHTML(contas, gerarCard);
 }
 
-export async function criarConta(formId) {
+return contas;
+
+}
+
+export async function criarConta(formId, callback) {
   const form = document.getElementById(formId);
 
   form?.addEventListener('submit', async e => {
@@ -36,43 +59,70 @@ export async function criarConta(formId) {
       body: JSON.stringify({
         nome: form.nome.value,
         tipo: form.tipo.value,
-        saldoInicial: Number(form.saldoInicial.value || 0)
+        saldo: Number(form.saldoInicial.value || 0)
       })
     });
 
     listarContas();
+    if (callback) callback();
   });
 }
 
 window.editarConta = async id => {
-  const novoNome = prompt('Novo nome:');
-  const novoTipo = prompt('Novo tipo (corrente/credito/dinheiro/investimento):');
+  abrirModal({
+    titulo: 'Editar conta',
+    conteudoHTML: `
+      <div class="form-group">
+        <label>Nome</label>
+        <input type="text" id="modalNomeConta" placeholder="Digite o nome da conta">
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select id="modalTipoConta">
+          <option value="">-- Selecione --</option>
+          <option value="corrente">Corrente</option>
+          <option value="credito">Crédito</option>
+          <option value="dinheiro">Dinheiro</option>
+          <option value="investimento">Investimento</option>
+        </select>
+      </div>
+    `,
+    onSalvar: async () => {
+      const novoNome = document.getElementById('modalNomeConta')?.value;
+      const novoTipo = document.getElementById('modalTipoConta')?.value;
 
-  if (!novoNome || !novoTipo) return;
+      if (!novoNome || !novoTipo) return;
 
-  await apiFetch(`${window.location.origin}/contas/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({
-      nome: novoNome,
-      tipo: novoTipo
-    })
+      await apiFetch(`${window.location.origin}/contas/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          nome: novoNome,
+          tipo: novoTipo
+        })
+      });
+
+      fecharModal();
+      listarContas();
+    }
   });
-
-  listarContas();
 };
 
 window.deletarConta = async id => {
-  if (!confirm('Deletar conta?')) return;
-
-  await apiFetch(`${window.location.origin}/contas/${id}`, {
-    method: 'DELETE'
+  abrirModalConfirmacao({
+    titulo: 'Confirmar exclusão',
+    mensagem: 'Tem certeza que deseja deletar esta conta?',
+    onConfirmar: async () => {
+      await apiFetch(`${window.location.origin}/contas/${id}`, {
+        method: 'DELETE'
+      });
+      fecharModal();
+      listarContas();
+    }
   });
-
-  listarContas();
 };
 
-export async function popularSelectContas() {
-  const select = document.getElementById('conta');
+export async function popularSelectContas(selectId = 'conta') {
+  const select = document.getElementById(selectId);
   if (!select) return;
 
   const contas = await listarContas();
@@ -80,10 +130,6 @@ export async function popularSelectContas() {
   select.innerHTML = '';
 
   contas.forEach(c => {
-    select.innerHTML += `
-      <option value="${c._id}">
-        ${c.nome} (${c.tipo})
-      </option>
-    `;
+    select.innerHTML += criarOpcao(c._id, `${c.nome} (${capitalizar(c.tipo)})`);
   });
 }

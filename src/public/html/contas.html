@@ -1,31 +1,79 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <title>Contas</title>
-  <link rel="stylesheet" href="../css/style.css">
-</head>
-<body>
-  <main>
-    <div class="container">
-      <h2>Gerenciar Contas</h2>
-      <form id="formConta">
-        <input placeholder="Nome da conta" id="nome" required/>
-        <select id="tipo">
-          <option value="corrente">Corrente</option>
-          <option value="credito">Crédito</option>
-          <option value="dinheiro">Dinheiro</option>
-          <option value="investimento">Investimento</option>
-        </select>
-        <input placeholder="Saldo Inicial" id="saldoInicial" type="number"/>
-        <button type="submit">Criar Conta</button>
-      </form>
-      <div id="contas"></div>
-    </div>
-  </main>
 
-  <script type="module" src="../js/conta.js"></script>
-  <script type="module" src="../js/init.js"></script>
-  <script type="module" src="../js/inicio.js"></script>
+<meta charset="UTF-8">
+<title>Contas</title>
+
+<link rel="stylesheet" href="../css/conta.css">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+</head>
+
+<body>
+
+<div id="menu"></div>
+
+<main>
+
+<div class="container">
+
+<h2>
+<i class="fa-solid fa-wallet"></i>
+Gerenciar Contas
+</h2>
+
+<form id="formConta" class="card">
+
+<h3><i class="fa-solid fa-plus"></i> Nova Conta</h3>
+
+<div class="form-grid">
+
+<div class="form-group">
+<label>Nome da conta</label>
+<input placeholder="Ex: Nubank" id="nome" required>
+</div>
+
+<div class="form-group">
+<label>Tipo</label>
+<select id="tipo">
+<option value="corrente">Corrente</option>
+<option value="credito">Crédito</option>
+<option value="dinheiro">Dinheiro</option>
+<option value="investimento">Investimento</option>
+</select>
+</div>
+
+<div class="form-group">
+<label>Saldo inicial</label>
+<input placeholder="0.00" id="saldoInicial" type="number" step="0.01">
+</div>
+
+</div>
+
+<button class="btn-salvar" type="submit">
+<i class="fa-solid fa-plus"></i> Criar Conta
+</button>
+
+</form>
+
+<hr>
+
+<h2>
+<i class="fa-solid fa-building-columns"></i>
+Suas Contas
+</h2>
+
+<div id="contas" class="contas-grid"></div>
+
+</div>
+
+</main>
+
+<script type="module" src="../js/conta.js"></script>
+<script type="module" src="../js/init.js"></script>
+
 </body>
 </html>

@@ -1,9 +1,7 @@
   import { logout } from './logout.js';
-  import { getToken } from './config.js';
+  import { addCSS } from './helpers/index.js';
 
   export async function adicionarMenu() {
-  const token = getToken();
-  if (token) {
     let menuDiv = document.getElementById('menu');
     if (!menuDiv) {
       menuDiv = document.createElement('div');
@@ -18,4 +16,7 @@
     const btnLogout = menuDiv.querySelector('#btnLogout');
     if (btnLogout) btnLogout.addEventListener('click', logout);
   }
-}
+
+  export async function carregarCSS(href) {
+    addCSS(href);
+  }

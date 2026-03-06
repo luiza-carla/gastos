@@ -1,4 +1,7 @@
 import { apiFetch } from './config.js';
+import { abrirModal, fecharModal } from './modalEditar.js';
+import { abrirModalConfirmacao } from './modalDeletar.js';
+import { formatarValor, capitalizar, criarCardsHTML, showById, hideById, setDisabledById, showElement, hideElement } from './helpers/index.js';
 
 let tags = [];
 
@@ -29,8 +32,8 @@ function inicializarTags() {
     input.value = '';
 
     if (tags.length >= 3) {
-      btnNova.disabled = true;
-      input.disabled = true;
+      setDisabledById('btnNovaTag', true);
+      setDisabledById('tagInput', true);
     }
   }
 
@@ -70,20 +73,38 @@ function atualizarTagsVisual(container) {
 
       atualizarTagsVisual(container);
 
-      const btnNova = document.getElementById('btnNovaTag');
-      const input = document.getElementById('tagInput');
-
-      btnNova.disabled = false;
-      input.disabled = false;
+      setDisabledById('btnNovaTag', false);
+      setDisabledById('tagInput', false);
     };
 
     container.appendChild(tagEl);
   });
 }
 
-export async function criarTransacao() {
+export async function criarTransacao(formId = 'formTransacao') {
 
-  const form = document.getElementById('formTransacao');
+  const form = document.getElementById(formId);
+  const tipoSelect = document.getElementById('tipo');
+  const tipoDespesaSelect = document.getElementById('tipoDespesaContainer')?.querySelector('#tipoDespesa');
+  const recorrenciaSelect = document.getElementById('recorrencia');
+  const parcelasContainer = document.getElementById('parcelasContainer');
+
+  tipoSelect?.addEventListener('change', () => {
+    if (tipoSelect.value === 'saida') {
+      showById('tipoDespesaContainer');
+    } else {
+      hideById('tipoDespesaContainer');
+      tipoDespesaSelect.value = '';
+    }
+  });
+
+  recorrenciaSelect?.addEventListener('change', () => {
+    if (recorrenciaSelect.value === 'nenhuma') {
+      hideElement(parcelasContainer);
+    } else {
+      showElement(parcelasContainer);
+    }
+  });
 
   form?.addEventListener('submit', async e => {
 
@@ -91,13 +112,15 @@ export async function criarTransacao() {
 
     const conta = document.getElementById('conta')?.value;
     const categoria = document.getElementById('categoria')?.value;
+    const tipoDespesa = tipoSelect.value === 'saida' ? tipoDespesaSelect.value : null;
 
     await apiFetch(window.location.origin + '/transacoes', {
       method: 'POST',
       body: JSON.stringify({
         titulo: form.titulo.value,
         valor: Number(form.valor.value),
-        tipo: form.tipo.value,
+        tipo: tipoSelect.value,
+        tipoDespesa,
         conta: conta,
         categoria: categoria,
         status: form.status.value,
@@ -113,8 +136,8 @@ export async function criarTransacao() {
     tags = [];
     atualizarTagsVisual(document.getElementById('tagsContainer'));
 
-    document.getElementById('btnNovaTag').disabled = false;
-    document.getElementById('tagInput').disabled = false;
+    setDisabledById('btnNovaTag', false);
+    setDisabledById('tagInput', false);
 
     form.reset();
 
@@ -124,58 +147,214 @@ export async function criarTransacao() {
 
 export async function listarTransacoes() {
 
-  const transacoes = await apiFetch(window.location.origin + '/transacoes');
-
   const container = document.getElementById('transacoes');
-
   if (!container) return;
 
-  let html = '';
+  const transacoes = await apiFetch(window.location.origin + '/transacoes');
 
-  transacoes.forEach(t => {
+  container.innerHTML = criarCardsHTML(transacoes, criarCardTransacao);
+}
 
-    html += `
-      <div>
-        <b>${t.titulo}</b> - ${t.tipo} - ${t.valor}
-        <br>Conta: ${t.conta?.nome || 'Sem conta'} 
-        | Categoria: ${t.categoria?.nome || 'Sem categoria'}
-        <br>Tags: ${t.tags?.length ? t.tags.join(', ') : '-'}
-        <br>Status: ${t.status} | Recorrência: ${t.recorrencia}
-        | Parcela: ${t.parcelamento?.parcelaAtual || 1}/${t.parcelamento?.totalParcelas || 1}
-        <br>
-        <button onclick="editarTransacao('${t._id}')">Editar</button>
-        <button onclick="deletarTransacao('${t._id}')">Deletar</button>
+
+function criarCardTransacao(t) {
+
+  const tipoClasse = t.tipo === 'entrada'
+    ? 'transacao-entrada'
+    : 'transacao-saida';
+
+  const tipoCapitalizado = capitalizar(t.tipo);
+  const tipoDespesaCapitalizado = t.tipoDespesa ? capitalizar(t.tipoDespesa) : '';
+  const recorrenciaCapitalizada = t.recorrencia && t.recorrencia.toLowerCase() !== 'nenhuma'
+    ? capitalizar(t.recorrencia)
+    : '';
+  const statusCapitalizado = capitalizar(t.status);
+  
+  const temRecorrencia = t.recorrencia && t.recorrencia.toLowerCase() !== 'nenhuma';
+
+  const valorFormatado = formatarValor(t.valor);
+
+  const conta = t.conta?.nome || 'Sem conta';
+  const categoria = t.categoria?.nome || 'Sem categoria';
+
+  const tags = gerarTags(t.tags);
+
+  const parcelaAtual = t.parcelamento?.parcelaAtual || 1;
+  const totalParcelas = t.parcelamento?.totalParcelas || 1;
+
+  return `
+    <div class="transacao-card ${tipoClasse}">
+
+      <div class="transacao-header">
+        <div class="transacao-titulo">
+          ${t.titulo}
+        </div>
+        <div class="transacao-valor ${tipoClasse}">
+          R$ ${valorFormatado}
+        </div>
       </div>
-      <hr>
-    `;
-  });
 
-  container.innerHTML = html;
+      <div class="transacao-corpo">
+        <div class="transacao-info-grid">
+          
+          <div class="info-linha">
+            <span class="info-label">Tipo:</span>
+            <span class="info-valor">${tipoCapitalizado}${tipoDespesaCapitalizado ? ' • ' + tipoDespesaCapitalizado : ''}</span>
+          </div>
+
+          <div class="info-linha">
+            <span class="info-label">Categoria:</span>
+            <span class="info-valor">${categoria}</span>
+          </div>
+
+          <div class="info-linha">
+            <span class="info-label">Conta:</span>
+            <span class="info-valor">${conta}</span>
+          </div>
+
+          <div class="info-linha">
+            <span class="info-label">Status:</span>
+            <span class="info-valor">${statusCapitalizado}</span>
+          </div>
+
+          <div class="info-linha">
+            <span class="info-label">Recorrência:</span>
+            <span class="info-valor">${recorrenciaCapitalizada || 'Nenhuma'}</span>
+          </div>
+
+          ${temRecorrencia ? `<div class="info-linha">
+            <span class="info-label">Parcela:</span>
+            <span class="info-valor">${parcelaAtual}/${totalParcelas}</span>
+          </div>` : ''}
+        </div>
+
+        ${tags ? `<div class="transacao-tags">
+          ${tags}
+        </div>` : ''}
+      </div>
+
+      <div class="transacao-acoes">
+        <button class="btn-editar" onclick="editarTransacao('${t._id}')" title="Editar">
+          <i class="fa-solid fa-pen"></i>
+        </button>
+        <button class="btn-deletar" onclick="deletarTransacao('${t._id}')" title="Deletar">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+
+    </div>
+  `;
+}
+
+
+function gerarTags(tags) {
+
+  if (!tags?.length) return '';
+
+  return tags
+    .map(tag => `<span class="tag">${tag}</span>`)
+    .join('');
 }
 
 window.editarTransacao = async id => {
 
-  const novoTitulo = prompt('Novo título:');
+  const transacao = (await apiFetch(window.location.origin + '/transacoes')).find(t => t._id === id);
+  const categorias = await apiFetch(window.location.origin + '/categorias');
 
-  if (!novoTitulo) return;
+  if (!transacao) return;
 
-  await apiFetch(`${window.location.origin}/transacoes/${id}`, {
-    method: 'PUT',
-    body: JSON.stringify({ titulo: novoTitulo })
+  const tipoDespesaField = `
+    <div class="form-group" id="modalGrupoTipoDespesa" style="display: ${transacao.tipo === 'saida' ? '' : 'none'};">
+      <label>Tipo de Despesa</label>
+      <select id="modalTipoDespesa">
+        <option value="">-- Selecione --</option>
+        <option value="essencial" ${transacao.tipoDespesa === 'essencial' ? 'selected' : ''}>Essencial</option>
+        <option value="eventual" ${transacao.tipoDespesa === 'eventual' ? 'selected' : ''}>Eventual</option>
+        <option value="opcional" ${transacao.tipoDespesa === 'opcional' ? 'selected' : ''}>Opcional</option>
+      </select>
+    </div>
+  `;
+
+  abrirModal({
+    titulo: 'Editar transação',
+    conteudoHTML: `
+      <div class="form-group">
+        <label>Título</label>
+        <input type="text" id="modalTituloTransacao" value="${transacao.titulo}">
+      </div>
+      <div class="form-group">
+        <label>Valor</label>
+        <input type="number" id="modalValorTransacao" value="${transacao.valor}" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Tipo</label>
+        <select id="modalTipoTransacao">
+          <option value="entrada" ${transacao.tipo === 'entrada' ? 'selected' : ''}>Entrada</option>
+          <option value="saida" ${transacao.tipo === 'saida' ? 'selected' : ''}>Saída</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Categoria</label>
+        <select id="modalCategoriaTransacao">
+          <option value="">-- Selecione --</option>
+          ${categorias.map(c => `<option value="${c._id}" ${transacao.categoria?._id === c._id ? 'selected' : ''}>${c.nome}</option>`).join('')}
+        </select>
+      </div>
+      ${tipoDespesaField}
+    `,
+    onSalvar: async () => {
+      const novoTitulo = document.getElementById('modalTituloTransacao')?.value;
+      const novoValor = Number(document.getElementById('modalValorTransacao')?.value);
+      const novoTipo = document.getElementById('modalTipoTransacao')?.value;
+      const novaCategoria = document.getElementById('modalCategoriaTransacao')?.value;
+      const novoTipoDespesa = document.getElementById('modalTipoDespesa')?.value;
+
+      if (!novoTitulo || !novoValor || !novoTipo || !novaCategoria) return;
+
+      const dados = {
+        titulo: novoTitulo,
+        valor: novoValor,
+        tipo: novoTipo,
+        categoria: novaCategoria
+      };
+
+      if (novoTipoDespesa) {
+        dados.tipoDespesa = novoTipoDespesa;
+      }
+
+      await apiFetch(`${window.location.origin}/transacoes/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(dados)
+      });
+
+      fecharModal();
+      listarTransacoes();
+    }
   });
 
-  listarTransacoes();
+  const selectTipo = document.getElementById('modalTipoTransacao');
+  const despField = document.getElementById('modalGrupoTipoDespesa');
+  if (selectTipo && despField) {
+    const toggle = () => {
+      despField.style.display = selectTipo.value === 'saida' ? '' : 'none';
+    };
+    selectTipo.addEventListener('change', toggle);
+    toggle();
+  }
 };
 
 window.deletarTransacao = async id => {
 
-  if (!confirm('Deletar transação?')) return;
-
-  await apiFetch(`${window.location.origin}/transacoes/${id}`, {
-    method: 'DELETE'
+  abrirModalConfirmacao({
+    titulo: 'Confirmar exclusão',
+    mensagem: 'Tem certeza que deseja deletar esta transação?',
+    onConfirmar: async () => {
+      await apiFetch(`${window.location.origin}/transacoes/${id}`, {
+        method: 'DELETE'
+      });
+      fecharModal();
+      listarTransacoes();
+    }
   });
-
-  listarTransacoes();
 };
 
 document.addEventListener('DOMContentLoaded', () => {

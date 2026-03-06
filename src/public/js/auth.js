@@ -1,5 +1,6 @@
 import { getToken } from './config.js';
 import { adicionarMenu } from './menu.js';
+import { carregarCSS } from './menu.js';
 
 export async function verificarAutenticacao() {
   const token = getToken();
@@ -17,6 +18,9 @@ export async function verificarAutenticacao() {
   }
 
   if (token) {
+    await carregarCSS('/css/menu.css'); 
+    await carregarCSS('/css/modal.css');
+    await carregarCSS('/css/style.css');
     await adicionarMenu();
   }
 }
