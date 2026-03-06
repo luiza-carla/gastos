@@ -38,6 +38,13 @@
   gap:10px;
 }
 
+.modal-footer button {
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
 .modal-footer button i {
   margin-right: 6px;
 }
@@ -45,11 +52,6 @@
 .btn-danger {
   background: var(--vermelho-escuro);
   color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
 }
 
 .btn-danger:hover {

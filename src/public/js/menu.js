@@ -1,5 +1,5 @@
   import { logout } from './logout.js';
-  import { addCSS } from './helpers/index.js';
+  import { abrirModalConfirmacao, fecharModal } from './modalDeletar.js';
 
   export async function adicionarMenu() {
     let menuDiv = document.getElementById('menu');
@@ -14,9 +14,18 @@
     menuDiv.innerHTML = html;
 
     const btnLogout = menuDiv.querySelector('#btnLogout');
-    if (btnLogout) btnLogout.addEventListener('click', logout);
-  }
+    if (btnLogout) {
+      btnLogout.addEventListener('click', (e) => {
+        e.preventDefault();
 
-  export async function carregarCSS(href) {
-    addCSS(href);
+        abrirModalConfirmacao({
+          titulo: 'Sair da conta',
+          mensagem: 'Tem certeza que deseja sair da sua conta?',
+          onConfirmar: () => {
+            fecharModal();
+            logout();
+          }
+        });
+      });
+    }
   }
