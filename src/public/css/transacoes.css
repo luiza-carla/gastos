@@ -40,6 +40,21 @@ padding:10px 12px;
 cursor:pointer;
 border-bottom:1px solid var(--cinza-linha);
 transition:background 0.2s;
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.categoria-cor{
+width:10px;
+height:10px;
+border-radius:50%;
+border:1px solid rgba(0,0,0,0.1);
+flex-shrink:0;
+}
+
+.categoria-nome{
+line-height:1.2;
 }
 
 .categoria-item:last-child{
@@ -89,21 +104,13 @@ border-radius:12px;
 padding:18px;
 margin-bottom:16px;
 box-shadow:0 2px 8px rgba(0,0,0,0.1);
-border-left:4px solid var(--cinza-claro);
+border-left:4px solid var(--cor-categoria, var(--cinza-claro));
 transition:all 0.3s ease;
 }
 
 .transacao-card:hover{
 box-shadow:0 4px 12px rgba(0,0,0,0.15);
 transform:translateY(-2px);
-}
-
-.transacao-card.transacao-entrada{
-border-left-color:var(--verde);
-}
-
-.transacao-card.transacao-saida{
-border-left-color:var(--vermelho);
 }
 
 .transacao-header{
@@ -143,7 +150,7 @@ flex:1;
 
 .transacao-info-grid{
 display:grid;
-grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+grid-template-columns:repeat(2, 1fr);
 gap:12px;
 margin-bottom:12px;
 }
@@ -168,6 +175,27 @@ color:var(--cinza-texto);
 font-weight:500;
 }
 
+.categoria-badge{
+display:inline-flex;
+align-items:center;
+gap:8px;
+padding:4px 10px;
+border-radius:999px;
+font-weight:600;
+font-size:12px;
+background:white;
+color:var(--cinza-texto);
+border:1px solid var(--categoria-cor);
+}
+
+.categoria-badge::before{
+content:'';
+width:8px;
+height:8px;
+border-radius:50%;
+background:var(--categoria-cor);
+}
+
 .transacao-tags{
 display:flex;
 flex-wrap:wrap;
@@ -178,6 +206,7 @@ margin-bottom:12px;
 .transacao-acoes{
 margin-top:14px;
 display:flex;
+justify-content:flex-end;
 gap:10px;
 padding-top:12px;
 border-top:1px solid var(--cinza-claro);
@@ -213,6 +242,18 @@ color:white;
 }
 
 .btn-deletar:hover{
-background:#c41e3a;
+background:var(--vermelho-hover);
 transform:scale(1.05);
+}
+
+#transacoes{
+display:grid;
+grid-template-columns:repeat(2, 1fr);
+gap:16px;
+}
+
+@media (max-width: 1200px) {
+#transacoes{
+grid-template-columns:1fr;
+}
 }

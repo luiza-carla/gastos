@@ -1,5 +1,5 @@
 import { apiFetch, getToken } from './config.js';
-import { $, setHTMLById, onEventById, addClass, removeClass } from './helpers/index.js';
+import { $, setHTMLById, onEventById, addClass, removeClass, escaparHtml, removerAcentos } from './helpers/index.js';
 
 // URL base da API de categorias
 const categoriaBaseUrl = window.location.origin + '/categorias';
@@ -8,9 +8,29 @@ const categoriaBaseUrl = window.location.origin + '/categorias';
 let todasCategorias = [];
 let categoriaSelecionada = null;
 
-// Remove acentos de uma string para busca insensível
-function removerAcentos(texto) {
-  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+function aplicarCorNoInputCategoria(cor = '') {
+  const inputBusca = $('buscaCategoria');
+  if (!inputBusca) return;
+
+  if (!cor) {
+    inputBusca.style.boxShadow = '';
+    return;
+  }
+
+  // Usa sombra interna para nao alterar largura/padding do texto no input.
+  inputBusca.style.boxShadow = `inset 4px 0 0 ${cor}`;
+}
+
+export function limparCategoriaSelecionada() {
+  const inputBusca = $('buscaCategoria');
+  const inputHidden = $('categoria');
+
+  if (inputBusca) inputBusca.value = '';
+  if (inputHidden) inputHidden.value = '';
+
+  categoriaSelecionada = null;
+  aplicarCorNoInputCategoria();
+  esconderDropdown();
 }
 
 // Lista todas as categorias e popula select
@@ -37,7 +57,10 @@ function mostrarDropdown(categorias) {
   }
 
   const html = categorias.map(cat => 
-    `<div class="categoria-item" data-id="${cat._id}">${cat.nome}</div>`
+    `<div class="categoria-item" data-id="${cat._id}" data-nome="${escaparHtml(cat.nome)}" data-cor="${cat.cor}">
+      <span class="categoria-cor" style="background:${cat.cor};"></span>
+      <span class="categoria-nome">${escaparHtml(cat.nome)}</span>
+    </div>`
   ).join('');
 
   setHTMLById('dropdownCategorias', html);
@@ -46,8 +69,10 @@ function mostrarDropdown(categorias) {
   dropdown.querySelectorAll('.categoria-item').forEach(item => {
     item.addEventListener('click', () => {
       const id = item.getAttribute('data-id');
-      if (id) {
-        selecionarCategoria(id, item.textContent);
+      const nome = item.getAttribute('data-nome');
+      const cor = item.getAttribute('data-cor');
+      if (id && nome) {
+        selecionarCategoria(id, nome, cor);
       }
     });
   });
@@ -64,14 +89,15 @@ function esconderDropdown() {
 }
 
 // Seleciona uma categoria
-function selecionarCategoria(id, nome) {
+function selecionarCategoria(id, nome, cor = '') {
   const inputBusca = $('buscaCategoria');
   const inputHidden = $('categoria');
 
   if (inputBusca) inputBusca.value = nome;
   if (inputHidden) inputHidden.value = id;
   
-  categoriaSelecionada = { id, nome };
+  categoriaSelecionada = { id, nome, cor };
+  aplicarCorNoInputCategoria(cor);
   esconderDropdown();
 }
 
@@ -102,6 +128,13 @@ export async function inicializarCategorias() {
 
   // Filtra ao digitar
   onEventById('buscaCategoria', 'input', (e) => {
+    if (categoriaSelecionada && e.target.value !== categoriaSelecionada.nome) {
+      const inputHidden = $('categoria');
+      if (inputHidden) inputHidden.value = '';
+      categoriaSelecionada = null;
+      aplicarCorNoInputCategoria();
+    }
+
     filtrarCategorias(e.target.value);
   });
 
@@ -111,5 +144,11 @@ export async function inicializarCategorias() {
     if (autocomplete && !autocomplete.contains(e.target) && dropdown) {
       removeClass(dropdown, 'show');
     }
+  });
+
+  // Garante limpeza visual da categoria quando formulario for resetado.
+  const form = document.getElementById('formTransacao');
+  form?.addEventListener('reset', () => {
+    limparCategoriaSelecionada();
   });
 }

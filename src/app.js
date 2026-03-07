@@ -32,4 +32,7 @@ app.use('/salarios', salarioRoutes);
 const resumoRoutes = require('./routes/resumo.routes');
 app.use('/resumo', resumoRoutes);
 
+const listaDesejoRoutes = require('./routes/listaDesejo.routes');
+app.use('/lista-desejos', listaDesejoRoutes);
+
 module.exports = app;

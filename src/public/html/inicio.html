@@ -1,81 +1,80 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Início - Controle de Gastos</title>
-  <link rel="stylesheet" href="../css/base.css">
-  <link rel="stylesheet" href="../css/inicio.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
-<body>
+  <head>
+    <meta charset="UTF-8">
+    <title>Início - Controle de Gastos</title>
+    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/inicio.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  </head>
+  
+  <body>
+    <script type="module" src="../js/auth.js"></script>
 
-  <script type="module" src="../js/auth.js"></script>
+    <main>
+      <div class="container">
+        <h2>Resumo Financeiro</h2>
 
-  <main>
-    <div class="container">
-      <h2>Resumo Financeiro</h2>
+        <div class="resumo-financeiro">
+          <p>
+            <span><i class="fa-solid fa-wallet"></i> Saldo</span>
+            <b>R$ <span id="saldo">0,00</span></b>
+          </p>
 
-      <div class="resumo-financeiro">
+          <p>
+            <span><i class="fa-solid fa-money-bill-wave"></i> Salários</span>
+            <b>R$ <span id="totalSalarios">0,00</span></b>
+          </p>
 
-      <p>
-        <span><i class="fa-solid fa-wallet"></i> Saldo</span>
-        <b>R$ <span id="saldo">0,00</span></b>
-      </p>
+          <p>
+            <span><i class="fa-solid fa-university"></i> Saldo nas contas</span>
+            <b>R$ <span id="saldoContas">0,00</span></b>
+          </p>
 
-      <p>
-        <span><i class="fa-solid fa-money-bill-wave"></i> Salários</span>
-        <b>R$ <span id="totalSalarios">0,00</span></b>
-      </p>
+          <p>
+            <span><i class="fa-solid fa-arrow-up"></i> Total de entradas</span>
+            <b>R$ <span id="totalEntradas">0,00</span></b>
+          </p>
 
-      <p>
-        <span><i class="fa-solid fa-university"></i> Saldo nas contas</span>
-        <b>R$ <span id="saldoContas">0,00</span></b>
-      </p>
+          <p>
+            <span><i class="fa-solid fa-arrow-down"></i> Total de saídas</span>
+            <b>R$ <span id="totalSaidas">0,00</span></b>
+          </p>
 
-      <p>
-        <span><i class="fa-solid fa-arrow-up"></i> Total de entradas</span>
-        <b>R$ <span id="totalEntradas">0,00</span></b>
-      </p>
+          <p style="font-size:18px;">
+            <b>Saldo total: R$ <span id="saldoFinal">0,00</span></b>
+          </p>
 
-      <p>
-        <span><i class="fa-solid fa-arrow-down"></i> Total de saídas</span>
-        <b>R$ <span id="totalSaidas">0,00</span></b>
-      </p>
-        <p style="font-size:18px;">
-          <b>Saldo total: R$ <span id="saldoFinal">0,00</span></b>
-        </p>
+          <button id="btnProjecao">Ver projeção com pendentes</button>
 
-        <button id="btnProjecao">Ver projeção com pendentes</button>
+          <div id="modalProjecao" class="modal" style="display:none;">
+            <div class="modal-content">
+              <h3>Projeção de saldo</h3>
 
-        <div id="modalProjecao" class="modal" style="display:none;">
-        <div class="modal-content">
+              <p>
+                Saldo atual:
+                <b>R$ <span id="projSaldoAtual">0,00</span></b>
+              </p>
 
-    <h3>Projeção de saldo</h3>
+              <p>
+                Saídas pendentes:
+                <b>R$ <span id="projSaidasPendentes">0,00</span></b>
+              </p>
 
-    <p>Saldo atual:
-      <b>R$ <span id="projSaldoAtual">0,00</span></b>
-    </p>
+              <hr>
 
-    <p>Saídas pendentes:
-      <b>R$ <span id="projSaidasPendentes">0,00</span></b>
-    </p>
+              <p style="font-size:18px;">
+                <b>Saldo projetado: R$ <span id="projSaldoFinal">0,00</span></b>
+              </p>
 
-    <hr>
-
-    <p style="font-size:18px;">
-      <b>Saldo projetado: R$ <span id="projSaldoFinal">0,00</span></b>
-    </p>
-
-    <button id="fecharModal">Fechar</button>
-
-  </div>
-</div>
+              <button id="fecharModal">Fechar</button>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </main>
+    </main>
 
-  <script type="module" src="../js/inicio.js"></script>
-  <script type="module" src="../js/init.js"></script>
-
-</body>
+    <script type="module" src="../js/inicio.js"></script>
+    <script type="module" src="../js/init.js"></script>
+  </body>
 </html>

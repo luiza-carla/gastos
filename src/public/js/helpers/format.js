@@ -9,3 +9,18 @@ export function capitalizar(texto = '') {
   if (!texto) return '';
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
+
+// Remove acentos de uma string para busca insensível
+export function removerAcentos(texto) {
+  return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+// Escapa caracteres HTML para evitar XSS
+export function escaparHtml(texto = '') {
+  return texto
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}

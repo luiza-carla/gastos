@@ -2,6 +2,7 @@ import { verificarAutenticacao } from './auth.js';
 import { criarConta, popularSelectContas, listarContas } from './conta.js';
 import { inicializarCategorias } from './categoria.js';
 import { criarTransacao, listarTransacoes } from './transacao.js';
+import { criarDesejo, listarDesejos } from './listaDesejo.js';
 import { criarSalario, listarSalarios } from './salario.js';
 import { carregarResumo } from './inicio.js';
 import { $ } from './helpers/index.js';
@@ -43,6 +44,17 @@ import { $ } from './helpers/index.js';
     });
   }
 
+})();
+
+// Inicializa lista de desejos
+(async function () {
+  if ($('formListaDesejo')) {
+    criarDesejo('formListaDesejo');
+  }
+
+  if ($('listaDesejos')) {
+    await listarDesejos();
+  }
 })();
 
 

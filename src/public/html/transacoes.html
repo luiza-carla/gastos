@@ -1,164 +1,139 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-<meta charset="UTF-8">
-<title>Transações</title>
+  <head>
+    <meta charset="UTF-8">
+    <title>Transações</title>
 
-<link rel="stylesheet" href="../css/base.css">
-<link rel="stylesheet" href="../css/transacoes.css">
+    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/transacoes.css">
 
-<link rel="stylesheet"
-href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  </head>
 
-</head>
+  <body>
+    <div id="menu"></div>
 
-<body>
+    <main>
+      <div class="container">
+        <h2><i class="fa-solid fa-money-bill-transfer"></i> Gerenciar transações</h2>
 
-<div id="menu"></div>
+        <form id="formTransacao">
+          <div class="card">
+            <h3><i class="fa-solid fa-plus"></i> Nova transação</h3>
 
-<main>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Título</label>
+                <input placeholder="Ex: Mercado" id="titulo" required>
+              </div>
 
-<div class="container">
+              <div class="form-group">
+                <label>Valor</label>
+                <input placeholder="Ex: 120" id="valor" type="number" step="0.01" required>
+              </div>
 
-<h2><i class="fa-solid fa-money-bill-transfer"></i> Gerenciar transações</h2>
+              <div class="form-group">
+                <label>Tipo</label>
+                <select id="tipo">
+                  <option value="entrada">Entrada</option>
+                  <option value="saida">Saída</option>
+                </select>
+              </div>
+            </div>
 
-<form id="formTransacao">
+            <div id="tipoDespesaContainer" class="form-group" style="display:none;">
+              <label for="tipoDespesa">Tipo de saída</label>
+              <select id="tipoDespesa">
+                <option value="">-- selecione --</option>
+                <option value="essencial">Essencial</option>
+                <option value="eventual">Eventual</option>
+                <option value="opcional">Opcional</option>
+              </select>
+            </div>
+          </div>
 
-<div class="card">
+          <div class="card">
+            <h3><i class="fa-solid fa-tags"></i> Classificação</h3>
 
-<h3><i class="fa-solid fa-plus"></i> Nova transação</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Conta</label>
+                <select id="conta"></select>
+              </div>
 
-<div class="form-grid">
+              <div class="form-group">
+                <label>Categoria</label>
+                <div class="categoria-autocomplete">
+                  <input type="text" id="buscaCategoria" placeholder="Buscar ou selecionar categoria..." autocomplete="off">
+                  <input type="hidden" id="categoria">
+                  <div id="dropdownCategorias" class="dropdown-categorias"></div>
+                </div>
+              </div>
+            </div>
 
-<div class="form-group">
-<label>Título</label>
-<input placeholder="Ex: Mercado" id="titulo" required>
-</div>
+            <div id="tagsArea">
+              <label>Tags</label>
 
-<div class="form-group">
-<label>Valor</label>
-<input placeholder="Ex: 120" id="valor" type="number" step="0.01" required>
-</div>
+              <div id="tagsContainer"></div>
 
-<div class="form-group">
-<label>Tipo</label>
-<select id="tipo">
-<option value="entrada">Entrada</option>
-<option value="saida">Saída</option>
-</select>
-</div>
+              <div class="tag-input-area">
+                <input id="tagInput" placeholder="Digite uma tag">
+                <button type="button" id="btnAddTag">
+                  <i class="fa-solid fa-check"></i>
+                </button>
+                <button type="button" id="btnNovaTag">
+                  <i class="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </div>
+          </div>
 
-</div>
+          <div class="card">
+            <h3><i class="fa-solid fa-repeat"></i> Pagamento</h3>
 
-<div id="tipoDespesaContainer" class="form-group" style="display:none;">
-<label for="tipoDespesa">Tipo de saída</label>
-<select id="tipoDespesa">
-<option value="">-- selecione --</option>
-<option value="essencial">Essencial</option>
-<option value="eventual">Eventual</option>
-<option value="opcional">Opcional</option>
-</select>
-</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Status</label>
+                <select id="status">
+                  <option value="pago">Pago</option>
+                  <option value="pendente">Pendente</option>
+                </select>
+              </div>
 
-</div>
+              <div class="form-group">
+                <label>Recorrência</label>
+                <select id="recorrencia">
+                  <option value="nenhuma">Nenhuma</option>
+                  <option value="mensal">Mensal</option>
+                </select>
+              </div>
 
-<div class="card">
+              <div id="parcelasContainer" style="display:none;">
+                <div class="form-group">
+                  <label>Total de parcelas</label>
+                  <input type="number" id="totalParcelas" min="1" value="1">
+                </div>
 
-<h3><i class="fa-solid fa-tags"></i> Classificação</h3>
+                <div class="form-group">
+                  <label>Parcela atual</label>
+                  <input type="number" id="parcelaAtual" min="1" value="1">
+                </div>
+              </div>
+            </div>
+          </div>
+          <button type="submit" class="btn-primary">
+            <i class="fa-solid fa-check"></i> Criar transação
+          </button>
+        </form>
 
-<div class="form-grid">
+        <hr>
 
-<div class="form-group">
-<label>Conta</label>
-<select id="conta"></select>
-</div>
+        <h2><i class="fa-solid fa-list"></i> Transações</h2>
 
-<div class="form-group">
-<label>Categoria</label>
-<div class="categoria-autocomplete">
-<input type="text" id="buscaCategoria" placeholder="Buscar ou selecionar categoria..." autocomplete="off">
-<input type="hidden" id="categoria">
-<div id="dropdownCategorias" class="dropdown-categorias"></div>
-</div>
-</div>
+        <div id="transacoes"></div>
+      </div>
+    </main>
 
-</div>
-
-<div id="tagsArea">
-
-<label>Tags</label>
-
-<div id="tagsContainer"></div>
-
-<div class="tag-input-area">
-<input id="tagInput" placeholder="Digite uma tag">
-<button type="button" id="btnAddTag">
-<i class="fa-solid fa-check"></i>
-</button>
-<button type="button" id="btnNovaTag">
-<i class="fa-solid fa-plus"></i>
-</button>
-</div>
-
-</div>
-
-</div>
-
-<div class="card">
-
-<h3><i class="fa-solid fa-repeat"></i> Pagamento</h3>
-
-<div class="form-grid">
-
-<div class="form-group">
-<label>Status</label>
-<select id="status">
-<option value="pago">Pago</option>
-<option value="pendente">Pendente</option>
-</select>
-</div>
-
-<div class="form-group">
-<label>Recorrência</label>
-<select id="recorrencia">
-<option value="nenhuma">Nenhuma</option>
-<option value="mensal">Mensal</option>
-</select>
-</div>
-
-<div id="parcelasContainer" style="display:none;">
-<div class="form-group">
-<label>Total de parcelas</label>
-<input type="number" id="totalParcelas" min="1" value="1">
-</div>
-
-<div class="form-group">
-<label>Parcela atual</label>
-<input type="number" id="parcelaAtual" min="1" value="1">
-</div>
-</div>
-
-</div>
-
-</div>
-
-<button class="btn-salvar" type="submit">
-<i class="fa-solid fa-plus"></i> Adicionar transação
-</button>
-
-</form>
-
-<hr>
-
-<h2><i class="fa-solid fa-list"></i> Transações</h2>
-
-<div id="transacoes"></div>
-
-</div>
-
-</main>
-
-<script type="module" src="../js/init.js"></script>
-
-</body>
+    <script type="module" src="../js/init.js"></script>
+  </body>
 </html>

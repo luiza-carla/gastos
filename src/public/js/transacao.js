@@ -1,89 +1,12 @@
 import { apiFetch } from './config.js';
+import { limparCategoriaSelecionada } from './categoria.js';
 import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
-import { formatarValor, capitalizar, criarCardsHTML, showById, hideById, setDisabledById, showElement, hideElement, $, clearElement, setHTMLById } from './helpers/index.js';
+import { formatarValor, capitalizar, criarCardsHTML, showById, hideById, setDisabledById, showElement, hideElement, $, clearElement, setHTMLById, escaparHtml } from './helpers/index.js';
+import { criarBadgeCategoria, atualizarTagsVisual, inicializarTags, gerarTags } from './helpers/tagHelpers.js';
 
 // Armazena tags temporarias do formulario
 let tags = [];
-
-// Inicializa fluxo de criacao e limite de tags
-function inicializarTags() {
-
-  const input = $('tagInput');
-  const btnAdd = $('btnAddTag');
-  const btnNova = $('btnNovaTag');
-  const container = $('tagsContainer');
-
-  if (!input || !btnAdd || !btnNova || !container) return;
-
-  function adicionarTag() {
-
-    const valor = input.value.trim();
-
-    if (!valor) return;
-
-    if (tags.length >= 3) {
-      alert('Máximo de 3 tags');
-      return;
-    }
-
-    tags.push(valor);
-
-    atualizarTagsVisual(container);
-
-    input.value = '';
-
-    if (tags.length >= 3) {
-      setDisabledById('btnNovaTag', true);
-      setDisabledById('tagInput', true);
-    }
-  }
-
-  // Registra eventos para adicionar tags
-  btnAdd.addEventListener('click', adicionarTag);
-
-  btnNova.addEventListener('click', () => {
-    input.disabled = false;
-    input.focus();
-  });
-
-  input.addEventListener('keypress', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      adicionarTag();
-    }
-  });
-}
-
-// Atualiza visualizacao de tags selecionadas
-function atualizarTagsVisual(container) {
-
-  clearElement(container);
-
-  tags.forEach((tag, index) => {
-
-    const tagEl = document.createElement('span');
-    tagEl.textContent = tag + ' ✕';
-    tagEl.style.marginRight = '8px';
-    tagEl.style.cursor = 'pointer';
-    tagEl.style.padding = '4px 8px';
-    tagEl.style.background = '#eee';
-    tagEl.style.borderRadius = '6px';
-    tagEl.style.display = 'inline-block';
-
-    tagEl.onclick = () => {
-
-      tags.splice(index, 1);
-
-      atualizarTagsVisual(container);
-
-      setDisabledById('btnNovaTag', false);
-      setDisabledById('tagInput', false);
-    };
-
-    container.appendChild(tagEl);
-  });
-}
 
 // Inicializa envio do formulario de transacao
 export async function criarTransacao(formId = 'formTransacao') {
@@ -141,12 +64,13 @@ export async function criarTransacao(formId = 'formTransacao') {
     });
 
     tags = [];
-    atualizarTagsVisual($('tagsContainer'));
+    atualizarTagsVisual($('tagsContainer'), tags);
 
     setDisabledById('btnNovaTag', false);
     setDisabledById('tagInput', false);
 
     form.reset();
+    limparCategoriaSelecionada();
 
     listarTransacoes();
   });
@@ -184,7 +108,8 @@ function criarCardTransacao(t) {
   const valorFormatado = formatarValor(t.valor);
 
   const conta = t.conta?.nome || 'Sem conta';
-  const categoria = t.categoria?.nome || 'Sem categoria';
+  const categoria = criarBadgeCategoria(t.categoria);
+  const corCategoria = t.categoria?.cor || '#95a5a6';
 
   const tags = gerarTags(t.tags);
 
@@ -192,11 +117,11 @@ function criarCardTransacao(t) {
   const totalParcelas = t.parcelamento?.totalParcelas || 1;
 
   return `
-    <div class="transacao-card ${tipoClasse}">
+    <div class="transacao-card ${tipoClasse}" style="--cor-categoria:${corCategoria};">
 
       <div class="transacao-header">
         <div class="transacao-titulo">
-          ${t.titulo}
+          ${escaparHtml(t.titulo)}
         </div>
         <div class="transacao-valor ${tipoClasse}">
           R$ ${valorFormatado}
@@ -218,7 +143,7 @@ function criarCardTransacao(t) {
 
           <div class="info-linha">
             <span class="info-label">Conta:</span>
-            <span class="info-valor">${conta}</span>
+            <span class="info-valor">${escaparHtml(conta)}</span>
           </div>
 
           <div class="info-linha">
@@ -253,16 +178,6 @@ function criarCardTransacao(t) {
 
     </div>
   `;
-}
-
-
-function gerarTags(tags) {
-
-  if (!tags?.length) return '';
-
-  return tags
-    .map(tag => `<span class="tag">${tag}</span>`)
-    .join('');
 }
 
 // Abre modal para edicao de transacao
@@ -374,5 +289,5 @@ window.deletarTransacao = async id => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  inicializarTags();
+  inicializarTags(tags);
 });

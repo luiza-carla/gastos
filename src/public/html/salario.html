@@ -1,66 +1,57 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="utf-8">
-  <title>Salários</title>
+  <head>
+    <meta charset="utf-8">
+    <title>Salários</title>
 
-  <link rel="stylesheet" href="../css/base.css">
-  <link rel="stylesheet" href="../css/salario.css">
+    <link rel="stylesheet" href="../css/base.css">
+    <link rel="stylesheet" href="../css/salario.css">
 
-  <link rel="stylesheet"
-  href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-</head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  </head>
 
-<body>
+  <body>
+    <div id="menu"></div>
 
-<div id="menu"></div>
+    <main>
+      <div class="container">
+        <h2><i class="fa-solid fa-hand-holding-dollar"></i> Gerenciar salários</h2>
 
-<main>
+        <form id="formSalario" class="card">
+          <h3><i class="fa-solid fa-plus"></i> Adicionar salário</h3>
 
-  <div class="container">
+          <div class="form-group">
+            <label>Valor</label>
+            <input type="number" id="valor" placeholder="Ex: 2500" step="0.01" required>
+          </div>
 
-    <h2><i class="fa-solid fa-hand-holding-dollar"></i> Gerenciar salários</h2>
+          <div class="form-group">
+            <label>Dia do recebimento</label>
+            <select id="diaRecebimento" required>
+              <option value="">-- Selecione o dia --</option>
+            </select>
+          </div>
 
-    <form id="formSalario" class="card">
+          <div class="form-group">
+            <label>Conta de depósito</label>
+            <select id="contaSalario">
+              <option value="">-- Selecione a conta --</option>
+            </select>
+          </div>
 
-      <h3><i class="fa-solid fa-plus"></i> Adicionar salário</h3>
+          <button type="submit">
+            <i class="fa-solid fa-floppy-disk"></i> Salvar salário
+          </button>
+        </form>
 
-        <div class="form-group">
-          <label>Valor</label>
-          <input type="number" id="valor" placeholder="Ex: 2500" step="0.01" required>
-        </div>
+        <hr>
 
-        <div class="form-group">
-          <label>Dia do recebimento</label>
-          <select id="diaRecebimento" required>
-            <option value="">-- Selecione o dia --</option>
-          </select>
-        </div>
+        <h2><i class="fa-solid fa-list"></i> Salários</h2>
 
-        <div class="form-group">
-          <label>Conta de depósito</label>
-          <select id="contaSalario">
-            <option value="">-- Selecione a conta --</option>
-          </select>
-        </div>
+        <div id="salariosContainer" class="lista-registros"></div>
+      </div>
+    </main>
 
-        <button type="submit">
-          <i class="fa-solid fa-floppy-disk"></i> Salvar salário
-        </button>
-
-    </form>
-
-    <hr>
-
-    <h2><i class="fa-solid fa-list"></i> Salários</h2>
-
-    <div id="salariosContainer" class="lista-registros"></div>
-
-  </div>
-
-</main>
-
-<script type="module" src="../js/init.js"></script>
-
-</body>
+    <script type="module" src="../js/init.js"></script>
+  </body>
 </html>
