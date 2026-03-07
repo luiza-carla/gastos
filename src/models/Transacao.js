@@ -68,6 +68,24 @@ const TransacaoSchema = new mongoose.Schema({
     default: 'nenhuma'
   },
 
+  frequencia: {
+    type: String,
+    enum: ['mensal', 'semanal', 'diario', 'anual', 'hora', 'outra'],
+    required: false
+  },
+
+  diaRecebimento: {
+    type: Number,
+    min: 1,
+    max: 31,
+    required: false
+  },
+
+  dataUltimoProcessamento: {
+    type: Date,
+    required: false
+  },
+
   parcelamento: {
     totalParcelas: { type: Number, default: 1 },
     parcelaAtual: { type: Number, default: 1 }

@@ -20,13 +20,13 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 
 <div class="container">
 
-<h2><i class="fa-solid fa-money-bill-transfer"></i> Nova Transação</h2>
+<h2><i class="fa-solid fa-money-bill-transfer"></i> Gerenciar transações</h2>
 
 <form id="formTransacao">
 
 <div class="card">
 
-<h3><i class="fa-solid fa-file-invoice-dollar"></i> Informações</h3>
+<h3><i class="fa-solid fa-plus"></i> Nova transação</h3>
 
 <div class="form-grid">
 
@@ -75,7 +75,11 @@ href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
 
 <div class="form-group">
 <label>Categoria</label>
-<select id="categoria"></select>
+<div class="categoria-autocomplete">
+<input type="text" id="buscaCategoria" placeholder="Buscar ou selecionar categoria..." autocomplete="off">
+<input type="hidden" id="categoria">
+<div id="dropdownCategorias" class="dropdown-categorias"></div>
+</div>
 </div>
 
 </div>

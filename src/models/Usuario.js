@@ -17,8 +17,6 @@ const UsuarioSchema = new mongoose.Schema({
     required: true 
   },
 
-  salarios: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Salario' }],
-
 }, { timestamps: true });
 
 module.exports = mongoose.model('Usuario', UsuarioSchema);

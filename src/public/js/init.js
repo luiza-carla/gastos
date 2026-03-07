@@ -4,40 +4,40 @@ import { inicializarCategorias } from './categoria.js';
 import { criarTransacao, listarTransacoes } from './transacao.js';
 import { criarSalario, listarSalarios } from './salario.js';
 import { carregarResumo } from './inicio.js';
+import { $ } from './helpers/index.js';
 
 (async function () {
   await verificarAutenticacao();
   
   await import('./modalEditar.js');
 
+  // Inicializa categorias
   await inicializarCategorias();
 })();
 
-
-// TRANSAÇÕES
+// Inicializa transações
 (async function () {
-  if (document.getElementById('formTransacao')) {
+  if ($('formTransacao')) {
     criarTransacao('formTransacao');
   }
 
-  if (document.getElementById('transacoes')) {
+  if ($('transacoes')) {
     await listarTransacoes();
   }
 })();
 
-
-// CONTAS
+// Inicializa contas
 (async function () {
 
-  if (document.getElementById('contas')) {
+  if ($('contas')) {
     await listarContas();
   }
 
-  if (document.getElementById('conta') || document.getElementById('contaSalario')) {
+  if ($('conta') || $('contaSalario')) {
     await popularSelectContas();
   }
 
-  if (document.getElementById('formConta')) {
+  if ($('formConta')) {
     criarConta('formConta', async () => {
       await popularSelectContas();
     });
@@ -46,26 +46,26 @@ import { carregarResumo } from './inicio.js';
 })();
 
 
-// RESUMO
+// Inicializa resumo financeiro
 (async function () {
-  if (document.getElementById('saldoFinal')) {
+  if ($('saldoFinal')) {
     await carregarResumo();
   }
 })();
 
 
-// SALÁRIOS
+// Inicializa salarios
 (async function () {
 
-  if (document.getElementById('salariosContainer')) {
+  if ($('salariosContainer')) {
     await listarSalarios();
   }
 
-  if (document.getElementById('contaSalario')) {
+  if ($('contaSalario')) {
     await popularSelectContas('contaSalario');
   }
 
-  if (document.getElementById('formSalario')) {
+  if ($('formSalario')) {
     criarSalario('formSalario');
   }
 

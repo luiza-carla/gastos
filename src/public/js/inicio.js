@@ -1,8 +1,7 @@
 import { apiFetch } from './config.js';
-import { formatarValor, setTextById, showById, hideById } from './helpers/index.js';
+import { formatarValor, setTextById, showById, hideById, onEventById, $ } from './helpers/index.js';
 
-console.log("inicio.js carregou");
-
+// Carrega resumo financeiro do mês
 export async function carregarResumo() {
   try {
     const dados = await apiFetch(window.location.origin + '/resumo');
@@ -20,15 +19,18 @@ export async function carregarResumo() {
   }
 }
 
+// Abre modal com projeção financeira futura
 async function abrirProjecao() {
   try {
 
+    // Busca projeção financeira
     const dados = await apiFetch(window.location.origin + '/resumo/projecao');
 
     setTextById('projSaldoAtual', formatarValor(dados.saldoAtual));
     setTextById('projSaidasPendentes', formatarValor(dados.saidasPendentes));
     setTextById('projSaldoFinal', formatarValor(dados.saldoProjetado));
 
+    // Exibe modal com projeção
     showById('modalProjecao');
 
   } catch (erro) {
@@ -36,10 +38,11 @@ async function abrirProjecao() {
   }
 }
 
+// Carrega listeners quando DOM estiver pronto
 document.addEventListener("DOMContentLoaded", () => {
 
-  const btn = document.getElementById("btnProjecao");
-  const fechar = document.getElementById("fecharModal");
+  const btn = $("btnProjecao");
+  const fechar = $("fecharModal");
 
   if (btn) {
     btn.addEventListener("click", abrirProjecao);

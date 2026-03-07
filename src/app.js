@@ -3,13 +3,17 @@ const path = require('path');
 require('dotenv').config();
 const cors = require('cors');
 
+// Inicialização da aplicação
 const app = express();
 
+// Middlewares globais
 app.use(cors());
 app.use(express.json());
 
+// Arquivos estáticos (frontend)
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Rotas da aplicação
 const userRoutes = require('./routes/user.routes');
 app.use('/usuarios', userRoutes);
 

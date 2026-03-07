@@ -1,8 +1,10 @@
 const Categoria = require('../models/Categoria');
 
+// Função para garantir que categorias padrão existem no banco
 async function garantirCategoriasPadrao() {
   const categorias = [
 
+    { nome: 'Salário', cor: '#2ecc71' },
 
     { nome: 'Freelance', cor: '#27ae60' },
     { nome: 'Comissão', cor: '#1abc9c' },
@@ -56,6 +58,7 @@ async function garantirCategoriasPadrao() {
 
   ];
 
+  // Insere categorias no banco (ou atualiza se já existem)
   for (const cat of categorias) {
     await Categoria.updateOne(
       { nome: cat.nome },
@@ -64,6 +67,7 @@ async function garantirCategoriasPadrao() {
     );
   }
 
+  // Log de confirmação
   console.log('Categorias padrão garantidas');
 }
 

@@ -4,6 +4,57 @@ grid-template-columns:1fr 1fr;
 gap:15px;
 }
 
+#parcelasContainer{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:15px;
+grid-column:1 / -1;
+}
+
+.categoria-autocomplete{
+position:relative;
+}
+
+.dropdown-categorias{
+position:absolute;
+top:100%;
+left:0;
+right:0;
+background:white;
+border:1px solid var(--cinza-borda);
+border-radius:8px;
+max-height:200px;
+overflow-y:auto;
+z-index:1000;
+display:none;
+box-shadow:0 4px 12px rgba(0,0,0,0.1);
+margin-top:4px;
+}
+
+.dropdown-categorias.show{
+display:block;
+}
+
+.categoria-item{
+padding:10px 12px;
+cursor:pointer;
+border-bottom:1px solid var(--cinza-linha);
+transition:background 0.2s;
+}
+
+.categoria-item:last-child{
+border-bottom:none;
+}
+
+.categoria-item:hover{
+background:var(--cinza-claro);
+}
+
+.categoria-item.selected{
+background:var(--verde);
+color:white;
+}
+
 #tagsArea{
 margin-top:15px;
 }
@@ -30,18 +81,6 @@ gap:6px;
 
 .tag-input-area input{
 flex:1;
-}
-
-.btn-salvar{
-margin-top:20px;
-background:var(--verde);
-font-size:15px;
-padding:14px;
-width:100%;
-}
-
-.btn-salvar:hover{
-background:var(--verde-azul);
 }
 
 .transacao-card{

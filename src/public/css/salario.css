@@ -25,3 +25,16 @@
   color:var(--verde);
   font-weight:600;
 }
+
+.salario-conta,
+.salario-dia{
+  font-size:0.9em;
+  color:var(--cinza-escuro);
+  margin-top:4px;
+}
+
+.salario-dia{
+  font-size:0.85em;
+  color:var(--azul);
+  font-weight:500;
+}

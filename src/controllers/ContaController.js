@@ -1,6 +1,7 @@
 const ContaService = require('../services/ContaService');
 
 class ContaController {
+  // Cria nova conta
   async criar(req, res) {
     try {
       const dados = { ...req.body, usuario: req.user.id };
@@ -11,6 +12,7 @@ class ContaController {
     }
   }
 
+  // Lista todas as contas do usuário
   async listar(req, res) {
     try {
       const contas = await ContaService.listar(req.user.id);
@@ -20,6 +22,7 @@ class ContaController {
     }
   }
 
+  // Atualiza conta existente
   async atualizar(req, res) {
     try {
       const conta = await ContaService.atualizar(req.params.id, req.body);
@@ -29,6 +32,7 @@ class ContaController {
     }
   }
 
+  // Deleta uma conta
   async deletar(req, res) {
     try {
       await ContaService.deletar(req.params.id, req.user.id);

@@ -1,20 +1,25 @@
 import { setToken, apiFetch } from './config.js';
+import { $ } from './helpers/index.js';
 
+// URL base da API de usuários
 const baseUrl = window.location.origin + '/usuarios';
 
-document.getElementById('formRegistrar').onsubmit = async e => {
+// Trata envio do formulário de registro
+$('formRegistrar').onsubmit = async e => {
   e.preventDefault();
 
   try {
+    // Faz requisição de registro com dados do formulário
     const data = await apiFetch(`${baseUrl}/registrar`, {
       method: 'POST',
       body: JSON.stringify({
-        nome: document.getElementById('nome').value,
-        email: document.getElementById('email').value,
-        senha: document.getElementById('senha').value,
+        nome: $('nome').value,
+        email: $('email').value,
+        senha: $('senha').value,
       })
     });
 
+    // Salva token e redireciona se sucesso
     if (data.token) {
       setToken(data.token);
       window.location.href = '/html/inicio.html';

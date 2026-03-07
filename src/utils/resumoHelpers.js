@@ -1,7 +1,9 @@
+// Função auxiliar para somar um campo numérico de um array
 function somarCampo(lista = [], campo) {
   return lista.reduce((acc, item) => acc + Number(item[campo] || 0), 0);
 }
 
+// Calcula totais de entradas e saídas de uma lista de transações
 function totaisTransacoes(transacoes = []) {
   let entradas = 0;
   let saidas = 0;
@@ -12,6 +14,7 @@ function totaisTransacoes(transacoes = []) {
   return { entradas, saidas };
 }
 
+// Calcula soma total de saídas
 function somaSaidas(transacoes = []) {
   let saidas = 0;
   transacoes.forEach(t => {

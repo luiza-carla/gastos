@@ -1,16 +1,18 @@
 import { apiFetch } from './config.js';
 import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
-import { formatarValor, capitalizar, criarCardsHTML, showById, hideById, setDisabledById, showElement, hideElement } from './helpers/index.js';
+import { formatarValor, capitalizar, criarCardsHTML, showById, hideById, setDisabledById, showElement, hideElement, $, clearElement, setHTMLById } from './helpers/index.js';
 
+// Armazena tags temporarias do formulario
 let tags = [];
 
+// Inicializa fluxo de criacao e limite de tags
 function inicializarTags() {
 
-  const input = document.getElementById('tagInput');
-  const btnAdd = document.getElementById('btnAddTag');
-  const btnNova = document.getElementById('btnNovaTag');
-  const container = document.getElementById('tagsContainer');
+  const input = $('tagInput');
+  const btnAdd = $('btnAddTag');
+  const btnNova = $('btnNovaTag');
+  const container = $('tagsContainer');
 
   if (!input || !btnAdd || !btnNova || !container) return;
 
@@ -37,6 +39,7 @@ function inicializarTags() {
     }
   }
 
+  // Registra eventos para adicionar tags
   btnAdd.addEventListener('click', adicionarTag);
 
   btnNova.addEventListener('click', () => {
@@ -52,9 +55,10 @@ function inicializarTags() {
   });
 }
 
+// Atualiza visualizacao de tags selecionadas
 function atualizarTagsVisual(container) {
 
-  container.innerHTML = '';
+  clearElement(container);
 
   tags.forEach((tag, index) => {
 
@@ -81,14 +85,16 @@ function atualizarTagsVisual(container) {
   });
 }
 
+// Inicializa envio do formulario de transacao
 export async function criarTransacao(formId = 'formTransacao') {
 
-  const form = document.getElementById(formId);
-  const tipoSelect = document.getElementById('tipo');
-  const tipoDespesaSelect = document.getElementById('tipoDespesaContainer')?.querySelector('#tipoDespesa');
-  const recorrenciaSelect = document.getElementById('recorrencia');
-  const parcelasContainer = document.getElementById('parcelasContainer');
+  const form = $(formId);
+  const tipoSelect = $('tipo');
+  const tipoDespesaSelect = $('tipoDespesaContainer')?.querySelector('#tipoDespesa');
+  const recorrenciaSelect = $('recorrencia');
+  const parcelasContainer = $('parcelasContainer');
 
+  // Controla exibicao de campos condicionais
   tipoSelect?.addEventListener('change', () => {
     if (tipoSelect.value === 'saida') {
       showById('tipoDespesaContainer');
@@ -106,12 +112,13 @@ export async function criarTransacao(formId = 'formTransacao') {
     }
   });
 
+  // Envia dados da transacao para API
   form?.addEventListener('submit', async e => {
 
     e.preventDefault();
 
-    const conta = document.getElementById('conta')?.value;
-    const categoria = document.getElementById('categoria')?.value;
+    const conta = $('conta')?.value;
+    const categoria = $('categoria')?.value;
     const tipoDespesa = tipoSelect.value === 'saida' ? tipoDespesaSelect.value : null;
 
     await apiFetch(window.location.origin + '/transacoes', {
@@ -134,7 +141,7 @@ export async function criarTransacao(formId = 'formTransacao') {
     });
 
     tags = [];
-    atualizarTagsVisual(document.getElementById('tagsContainer'));
+    atualizarTagsVisual($('tagsContainer'));
 
     setDisabledById('btnNovaTag', false);
     setDisabledById('tagInput', false);
@@ -145,14 +152,17 @@ export async function criarTransacao(formId = 'formTransacao') {
   });
 }
 
+// Lista transacoes do usuario na tela
 export async function listarTransacoes() {
 
-  const container = document.getElementById('transacoes');
+  const container = $('transacoes');
+// Gera HTML de um card de transacao
   if (!container) return;
 
   const transacoes = await apiFetch(window.location.origin + '/transacoes');
+// Gera HTML das tags da transacao
 
-  container.innerHTML = criarCardsHTML(transacoes, criarCardTransacao);
+  setHTMLById('transacoes', criarCardsHTML(transacoes, criarCardTransacao));
 }
 
 
@@ -255,6 +265,7 @@ function gerarTags(tags) {
     .join('');
 }
 
+// Abre modal para edicao de transacao
 window.editarTransacao = async id => {
 
   const transacao = (await apiFetch(window.location.origin + '/transacoes')).find(t => t._id === id);

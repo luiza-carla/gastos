@@ -3,7 +3,6 @@ const router = express.Router();
 const TransacaoController = require('../controllers/TransacaoController');
 const autenticacao = require('../middlewares/autentication');
 
-// Rotas protegidas
 router.post('/', autenticacao, TransacaoController.criar);
 router.get('/', autenticacao, TransacaoController.listar);
 router.put('/:id', autenticacao, TransacaoController.atualizar);

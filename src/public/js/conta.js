@@ -1,13 +1,14 @@
 import { apiFetch } from './config.js';
 import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
-import { formatarValor, criarOpcao, criarCardsHTML, capitalizar } from './helpers/index.js';
+import { formatarValor, criarOpcao, criarCardsHTML, capitalizar, $, clearElement, setHTMLById } from './helpers/index.js';
 
+// Lista todas as contas do usuário
 export async function listarContas(){
 
 const contas = await apiFetch('/contas');
 
-const container = document.getElementById('contas');
+const container = $('contas');
 
 if (container) {
   const gerarCard = c => `
@@ -41,15 +42,16 @@ if (container) {
   </div>
   `;
 
-  container.innerHTML = criarCardsHTML(contas, gerarCard);
+  setHTMLById('contas', criarCardsHTML(contas, gerarCard));
 }
 
 return contas;
 
 }
 
+// Cria nova conta a partir de formulário
 export async function criarConta(formId, callback) {
-  const form = document.getElementById(formId);
+  const form = $(formId);
 
   form?.addEventListener('submit', async e => {
     e.preventDefault();
@@ -68,6 +70,7 @@ export async function criarConta(formId, callback) {
   });
 }
 
+// Abre modal para editar conta existente
 window.editarConta = async id => {
   abrirModal({
     titulo: 'Editar conta',
@@ -88,8 +91,8 @@ window.editarConta = async id => {
       </div>
     `,
     onSalvar: async () => {
-      const novoNome = document.getElementById('modalNomeConta')?.value;
-      const novoTipo = document.getElementById('modalTipoConta')?.value;
+      const novoNome = $('modalNomeConta')?.value;
+      const novoTipo = $('modalTipoConta')?.value;
 
       if (!novoNome || !novoTipo) return;
 
@@ -107,6 +110,7 @@ window.editarConta = async id => {
   });
 };
 
+// Abre modal de confirmação para deletar conta
 window.deletarConta = async id => {
   abrirModalConfirmacao({
     titulo: 'Confirmar exclusão',
@@ -126,13 +130,14 @@ window.deletarConta = async id => {
   });
 };
 
+// Popula select com lista de contas disponíveis
 export async function popularSelectContas(selectId = 'conta') {
-  const select = document.getElementById(selectId);
+  const select = $(selectId);
   if (!select) return;
 
   const contas = await listarContas();
 
-  select.innerHTML = '';
+  clearElement(select);
 
   contas.forEach(c => {
     select.innerHTML += criarOpcao(c._id, `${c.nome} (${capitalizar(c.tipo)})`);

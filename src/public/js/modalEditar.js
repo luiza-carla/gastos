@@ -1,41 +1,49 @@
-import { setHTMLById, showElement, hideElement, showModal, hideModal } from './helpers/index.js';
+import { setHTMLById, showElement, hideElement, showModal, hideModal, $ } from './helpers/index.js';
 
+// Armazena callback de salvamento do modal
 let salvarCallback = null;
 
+// Abre modal de edicao com titulo e conteudo personalizados
 export function abrirModal({ titulo, conteudoHTML, onSalvar }) {
 
-  const modal = document.getElementById('modalGlobal');
-  const tituloEl = document.getElementById('modalTitulo');
+  // Atualiza titulo e conteudo do modal
+  const modal = $('modalGlobal');
+  const tituloEl = $('modalTitulo');
 
-  tituloEl.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> ${titulo}`;
+  setHTMLById('modalTitulo', `<i class="fa-solid fa-pen-to-square"></i> ${titulo}`);
   setHTMLById('modalConteudo', conteudoHTML);
 
+  // Define callback de salvar
   salvarCallback = onSalvar;
 
-  showElement(document.getElementById('modalFooterEditar'));
-  hideElement(document.getElementById('modalFooterConfirmar'));
-  hideElement(document.getElementById('modalFooterErro'));
+  // Ajusta botoes exibidos no modal
+  showElement($('modalFooterEditar'));
+  hideElement($('modalFooterConfirmar'));
+  hideElement($('modalFooterErro'));
 
   showModal();
 }
 
+// Fecha modal global
 export function fecharModal() {
   hideModal();
 }
 
+// Abre modal de erro com mensagem informada
 export function abrirModalErro(mensagem) {
-  const tituloEl = document.getElementById('modalTitulo');
+  const tituloEl = $('modalTitulo');
   
-  tituloEl.innerHTML = '<i class="fa-solid fa-circle-xmark" style="color: var(--vermelho-escuro);"></i> Erro';
+  setHTMLById('modalTitulo', '<i class="fa-solid fa-circle-xmark" style="color: var(--vermelho-escuro);"></i> Erro');
   setHTMLById('modalConteudo', `<p style="margin: 0; padding: 10px 0; color: #666; line-height: 1.6;">${mensagem}</p>`);
   
-  hideElement(document.getElementById('modalFooterEditar'));
-  hideElement(document.getElementById('modalFooterConfirmar'));
-  showElement(document.getElementById('modalFooterErro'));
+  hideElement($('modalFooterEditar'));
+  hideElement($('modalFooterConfirmar'));
+  showElement($('modalFooterErro'));
   
   showModal();
 }
 
+// Trata cliques dos botoes do modal
 document.addEventListener('click', (e) => {
   if (e.target.id === 'modalSalvar') {
     if (salvarCallback) salvarCallback();
