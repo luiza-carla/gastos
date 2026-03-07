@@ -55,7 +55,7 @@ export async function criarTransacao(formId = 'formTransacao') {
         categoria: categoria,
         status: form.status.value,
         recorrencia: form.recorrencia.value,
-        tags: tags,
+        tags: [...tags],
         parcelamento: {
           totalParcelas: Number(form.totalParcelas.value || 1),
           parcelaAtual: Number(form.parcelaAtual.value || 1)
@@ -63,7 +63,7 @@ export async function criarTransacao(formId = 'formTransacao') {
       })
     });
 
-    tags = [];
+    tags.length = 0;
     atualizarTagsVisual($('tagsContainer'), tags);
 
     setDisabledById('btnNovaTag', false);

@@ -33,12 +33,12 @@ export async function criarDesejo(formId = 'formListaDesejo') {
         valor: Number(form.valor.value),
         categoria,
         tipoDespesa: tipoDespesa || undefined,
-        tags
+        tags: [...tags]
       })
     });
 
     // Reseta estado do formulário
-    tags = [];
+    tags.length = 0;
     atualizarTagsVisual($('tagsContainer'), tags);
     setDisabledById('btnNovaTag', false);
     setDisabledById('tagInput', false);
