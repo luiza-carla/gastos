@@ -16,7 +16,6 @@ class TransacaoService {
     return Transacao.find({ usuario: usuarioId })
       .populate('conta', 'nome tipo')     
       .populate('categoria', 'nome tipo cor')
-      .populate('tags', 'nome cor')
       .select('-__v');
   }
 

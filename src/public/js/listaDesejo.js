@@ -287,5 +287,7 @@ window.deletarDesejo = async id => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  inicializarTags(tags);
+  if ($('formListaDesejo')) {
+    inicializarTags(tags);
+  }
 });

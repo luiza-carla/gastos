@@ -289,5 +289,7 @@ window.deletarTransacao = async id => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-  inicializarTags(tags);
+  if ($('formTransacao')) {
+    inicializarTags(tags);
+  }
 });
