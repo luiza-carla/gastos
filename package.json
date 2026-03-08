@@ -21,6 +21,6 @@
   },
   "scripts": {
     "dev": "nodemon src/server.js",
-    "fix": "eslint . --fix && prettier . --write"
+    "fix": "prettier . --write && eslint . --fix"
   }
 }

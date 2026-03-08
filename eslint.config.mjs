@@ -19,7 +19,17 @@ export default defineConfig([
       },
     },
     rules: {
-      'prettier/prettier': 'warn',
+      quotes: 'off',
+      'quote-props': 'off',
+      'prettier/prettier': [
+        'warn',
+        {
+          singleQuote: true,
+          semi: true,
+          tabWidth: 2,
+          trailingComma: 'es5',
+        },
+      ],
     },
   },
 
