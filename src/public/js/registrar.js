@@ -5,7 +5,7 @@ import { $ } from './helpers/index.js';
 const baseUrl = window.location.origin + '/usuarios';
 
 // Trata envio do formulário de registro
-$('formRegistrar').onsubmit = async e => {
+$('formRegistrar').onsubmit = async (e) => {
   e.preventDefault();
 
   try {
@@ -16,7 +16,7 @@ $('formRegistrar').onsubmit = async e => {
         nome: $('nome').value,
         email: $('email').value,
         senha: $('senha').value,
-      })
+      }),
     });
 
     // Salva token e redireciona se sucesso

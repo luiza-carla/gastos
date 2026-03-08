@@ -26,9 +26,14 @@ class ContaService {
     const Transacao = require('../models/Transacao');
 
     // Valida se existem transações na conta
-    const transCount = await Transacao.countDocuments({ conta: id, usuario: usuarioId });
+    const transCount = await Transacao.countDocuments({
+      conta: id,
+      usuario: usuarioId,
+    });
     if (transCount > 0) {
-      const erro = new Error('Não é possível apagar a conta pois existem transações ou salários associados.');
+      const erro = new Error(
+        'Não é possível apagar a conta pois existem transações ou salários associados.'
+      );
       erro.statusCode = 400;
       throw erro;
     }

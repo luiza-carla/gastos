@@ -1,7 +1,6 @@
 const ResumoService = require('../services/ResumoService');
 
 class ResumoController {
-
   // Obtém resumo financeiro do usuário
   async obterResumo(req, res) {
     // Recupera ID do usuário autenticado
@@ -21,7 +20,6 @@ class ResumoController {
     const dados = await ResumoService.gerarProjecao(usuarioId);
     res.json(dados);
   }
-
 }
 
 module.exports = new ResumoController();

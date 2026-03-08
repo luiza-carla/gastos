@@ -1,15 +1,13 @@
 const Categoria = require('../models/Categoria');
 
 class CategoriaService {
-
   // Lista categorias ativas (excluindo salário)
   async listar() {
-    return Categoria.find({ 
+    return Categoria.find({
       ativa: true,
-      nome: { $ne: 'Salário' }
+      nome: { $ne: 'Salário' },
     }).select('-__v');
   }
-
 }
 
 module.exports = new CategoriaService();

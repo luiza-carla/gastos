@@ -39,7 +39,7 @@ export function clearElement(el) {
 export function populateSelect(selectEl, items, valueFn, textFn) {
   if (!selectEl) return;
   selectEl.innerHTML = '';
-  items.forEach(item => {
+  items.forEach((item) => {
     const valor = valueFn ? valueFn(item) : item._id;
     const texto = textFn ? textFn(item) : item.nome || '';
     selectEl.innerHTML += criarOpcao(valor, texto);

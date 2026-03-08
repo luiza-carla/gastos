@@ -1,16 +1,9 @@
 const ListaDesejo = require('../models/ListaDesejo');
 
 class ListaDesejoController {
-
   // Cria item da lista de desejos
   async criar(req, res) {
-    const {
-      titulo,
-      valor,
-      categoria,
-      tags,
-      tipoDespesa
-    } = req.body;
+    const { titulo, valor, categoria, tags, tipoDespesa } = req.body;
 
     const novoItem = await ListaDesejo.create({
       usuario: req.user.id,
@@ -18,11 +11,13 @@ class ListaDesejoController {
       valor,
       categoria,
       tags: tags || [],
-      tipoDespesa
+      tipoDespesa,
     });
 
-    const itemCompleto = await ListaDesejo.findById(novoItem._id)
-      .populate('categoria', 'nome cor tipo');
+    const itemCompleto = await ListaDesejo.findById(novoItem._id).populate(
+      'categoria',
+      'nome cor tipo'
+    );
 
     res.status(201).json(itemCompleto);
   }
@@ -51,11 +46,12 @@ class ListaDesejoController {
       { _id: req.params.id, usuario: req.user.id },
       updateData,
       { returnDocument: 'after' }
-    )
-      .populate('categoria', 'nome cor tipo');
+    ).populate('categoria', 'nome cor tipo');
 
     if (!item) {
-      return res.status(404).json({ mensagem: 'Item da lista de desejos nao encontrado' });
+      return res
+        .status(404)
+        .json({ mensagem: 'Item da lista de desejos nao encontrado' });
     }
 
     res.json(item);
@@ -65,16 +61,17 @@ class ListaDesejoController {
   async deletar(req, res) {
     const item = await ListaDesejo.findOneAndDelete({
       _id: req.params.id,
-      usuario: req.user.id
+      usuario: req.user.id,
     });
 
     if (!item) {
-      return res.status(404).json({ mensagem: 'Item da lista de desejos nao encontrado' });
+      return res
+        .status(404)
+        .json({ mensagem: 'Item da lista de desejos nao encontrado' });
     }
 
     res.json({ mensagem: 'Item da lista de desejos deletado' });
   }
-
 }
 
 module.exports = new ListaDesejoController();

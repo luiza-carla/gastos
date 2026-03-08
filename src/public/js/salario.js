@@ -1,7 +1,14 @@
 import { apiFetch } from './config.js';
 import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
-import { formatarValor, criarCardsHTML, capitalizar, $, clearElement, setHTMLById } from './helpers/index.js';
+import {
+  formatarValor,
+  criarCardsHTML,
+  capitalizar,
+  $,
+  clearElement,
+  setHTMLById,
+} from './helpers/index.js';
 import { listarContas } from './conta.js';
 import { carregarResumo } from './inicio.js';
 
@@ -9,7 +16,10 @@ import { carregarResumo } from './inicio.js';
 const salarioBaseUrl = window.location.origin + '/salarios';
 
 // Popula select com dias possiveis de recebimento
-function popularSelectDiasRecebimento(selectId = 'diaRecebimento', diaPadrao = 5) {
+function popularSelectDiasRecebimento(
+  selectId = 'diaRecebimento',
+  diaPadrao = 5
+) {
   const select = $(selectId);
   if (!select) return;
 
@@ -57,8 +67,8 @@ export function criarSalario(formId = 'formSalario', callback) {
         valor: Number(valor),
         diaRecebimento: Number(diaRecebimento),
         frequencia: 'mensal',
-        conta: conta || null
-      })
+        conta: conta || null,
+      }),
     });
 
     form.reset();
@@ -83,7 +93,7 @@ export async function listarSalarios() {
 
   clearElement(container);
 
-  const gerarItem = s => {
+  const gerarItem = (s) => {
     const contaNome = s.conta ? s.conta.nome : 'Sem conta';
     const diaRecebimento = s.diaRecebimento || 5;
     return `
@@ -131,15 +141,13 @@ window.deletarSalario = async (id) => {
         fecharModal();
         abrirModalErro(err.message);
       }
-    }
+    },
   });
 };
 
 // Abre modal para edicao de salario
 window.editarSalario = (id, valor, diaRecebimento) => {
-
   abrirModal({
-
     titulo: 'Editar salário',
 
     conteudoHTML: `
@@ -150,17 +158,18 @@ window.editarSalario = (id, valor, diaRecebimento) => {
       <div class="form-group">
         <label>Dia do recebimento</label>
         <select id="modalDiaRecebimento">
-          ${[...Array(31)].map((_, i) => {
-            const dia = i + 1;
-            const selected = dia === diaRecebimento ? 'selected' : '';
-            return `<option value="${dia}" ${selected}>Dia ${dia}</option>`;
-          }).join('')}
+          ${[...Array(31)]
+            .map((_, i) => {
+              const dia = i + 1;
+              const selected = dia === diaRecebimento ? 'selected' : '';
+              return `<option value="${dia}" ${selected}>Dia ${dia}</option>`;
+            })
+            .join('')}
         </select>
       </div>
     `,
 
     onSalvar: async () => {
-
       const novoValor = Number(
         document.getElementById('modalValorSalario')?.value
       );
@@ -170,18 +179,16 @@ window.editarSalario = (id, valor, diaRecebimento) => {
 
       await apiFetch(`${salarioBaseUrl}/${id}`, {
         method: 'PUT',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           valor: novoValor,
           diaRecebimento: novoDiaRecebimento,
-          frequencia: 'mensal'
-        })
+          frequencia: 'mensal',
+        }),
       });
 
       fecharModal();
       await listarSalarios();
       await atualizarVisoesRelacionadas();
-    }
-
+    },
   });
-
 };

@@ -1,16 +1,28 @@
-import { setHTMLById, showElement, hideElement, showModal, hideModal, $ } from './helpers/index.js';
+import {
+  setHTMLById,
+  showElement,
+  hideElement,
+  showModal,
+  hideModal,
+  $,
+} from './helpers/index.js';
 
 // Armazena callback de confirmacao do modal
 let confirmarCallback = null;
 
 // Abre modal de confirmacao com titulo e mensagem
 export function abrirModalConfirmacao({ titulo, mensagem, onConfirmar }) {
-
   // Atualiza titulo e conteudo do modal
   const tituloEl = $('modalTitulo');
 
-  setHTMLById('modalTitulo', `<i class="fa-solid fa-triangle-exclamation" style="color: var(--vermelho-escuro);"></i> ${titulo}`);
-  setHTMLById('modalConteudo', `<p style="margin: 0; padding: 10px 0; color: #666;">${mensagem}</p>`);
+  setHTMLById(
+    'modalTitulo',
+    `<i class="fa-solid fa-triangle-exclamation" style="color: var(--vermelho-escuro);"></i> ${titulo}`
+  );
+  setHTMLById(
+    'modalConteudo',
+    `<p style="margin: 0; padding: 10px 0; color: #666;">${mensagem}</p>`
+  );
 
   // Define callback de confirmacao
   confirmarCallback = onConfirmar;

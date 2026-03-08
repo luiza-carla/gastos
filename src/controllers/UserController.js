@@ -1,7 +1,6 @@
 const UserService = require('../services/UserService');
 
 class UserController {
-
   // Registra novo usuário
   async registrar(req, res) {
     const usuario = await UserService.registrar(req.body);
@@ -19,7 +18,6 @@ class UserController {
     const usuarios = await UserService.listar();
     return res.json(usuarios);
   }
-
 }
 
 module.exports = new UserController();

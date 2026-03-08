@@ -1,10 +1,13 @@
 const Transacao = require('../models/Transacao');
 const Categoria = require('../models/Categoria');
 const Conta = require('../models/Conta');
-const { somarCampo, totaisTransacoes, somaSaidas } = require('../utils/resumoHelpers');
+const {
+  somarCampo,
+  totaisTransacoes,
+  somaSaidas,
+} = require('../utils/resumoHelpers');
 
 class ResumoService {
-
   // Busca a categoria de salário cadastrada no sistema
   async buscarCategoriaSalario() {
     return Categoria.findOne({ nome: 'Salário' });
@@ -17,7 +20,7 @@ class ResumoService {
     return Transacao.find({
       usuario: usuarioId,
       categoria: categoriaSalario._id,
-      ativa: true
+      ativa: true,
     });
   }
 
@@ -27,7 +30,7 @@ class ResumoService {
 
     return {
       ...filtro,
-      categoria: { $ne: categoriaSalario._id }
+      categoria: { $ne: categoriaSalario._id },
     };
   }
 
@@ -50,25 +53,23 @@ class ResumoService {
 
   // Calcula total de salários que já venceram até hoje
   calcularSalariosDevidosAteHoje(transacoesSalario, hoje) {
-    const salariosVencidos = transacoesSalario
-      .filter((salario) => {
-        const dataVencimento = this.calcularDataVencimentoNoMes(salario, hoje);
-        const jaVenceuNoMes = dataVencimento <= hoje;
-        const validoNoVencimento = this.salarioEstaValidoNoVencimento(salario);
+    const salariosVencidos = transacoesSalario.filter((salario) => {
+      const dataVencimento = this.calcularDataVencimentoNoMes(salario, hoje);
+      const jaVenceuNoMes = dataVencimento <= hoje;
+      const validoNoVencimento = this.salarioEstaValidoNoVencimento(salario);
 
-        return jaVenceuNoMes && validoNoVencimento;
-      });
+      return jaVenceuNoMes && validoNoVencimento;
+    });
 
     return somarCampo(salariosVencidos, 'valor');
   }
 
   // Calcula quanto dos salários já foi processado no mês atual
   calcularSalariosProcessadosNoMes(salarios, inicioMes) {
-    const salariosProcessados = salarios
-      .filter(s => {
-        const ultimoProc = s.dataUltimoProcessamento;
-        return ultimoProc && new Date(ultimoProc) >= inicioMes;
-      });
+    const salariosProcessados = salarios.filter((s) => {
+      const ultimoProc = s.dataUltimoProcessamento;
+      return ultimoProc && new Date(ultimoProc) >= inicioMes;
+    });
 
     return somarCampo(salariosProcessados, 'valor');
   }
@@ -76,14 +77,33 @@ class ResumoService {
   // Gera resumo financeiro atual do usuário
   async gerarResumo(usuarioId) {
     const hoje = new Date();
-    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1, 0, 0, 0, 0);
-    const fimMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0, 23, 59, 59, 999);
+    const inicioMes = new Date(
+      hoje.getFullYear(),
+      hoje.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0
+    );
+    const fimMes = new Date(
+      hoje.getFullYear(),
+      hoje.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999
+    );
 
     const categoriaSalario = await this.buscarCategoriaSalario();
-    const salarios = await this.buscarSalariosAtivos(usuarioId, categoriaSalario);
+    const salarios = await this.buscarSalariosAtivos(
+      usuarioId,
+      categoriaSalario
+    );
 
     const contas = await Conta.find({ usuario: usuarioId });
-    
+
     // Busca transações do mês EXCLUINDO salários (para não duplicar)
     const filtroTransacoes = {
       usuario: usuarioId,
@@ -91,8 +111,8 @@ class ResumoService {
       status: 'pago',
       data: {
         $gte: inicioMes,
-        $lte: fimMes
-      }
+        $lte: fimMes,
+      },
     };
 
     const filtroTransacoesSemSalario = this.adicionarExclusaoCategoriaSalario(
@@ -103,12 +123,21 @@ class ResumoService {
     const transacoesMes = await Transacao.find(filtroTransacoesSemSalario);
 
     // Calcula salários devidos até hoje
-    const salariosDevidosAteHoje = this.calcularSalariosDevidosAteHoje(salarios, hoje);
-    
-    // Calcula quanto dos salários devidos já foi processado neste mês
-    const salariosProcessadosNoMes = this.calcularSalariosProcessadosNoMes(salarios, inicioMes);
+    const salariosDevidosAteHoje = this.calcularSalariosDevidosAteHoje(
+      salarios,
+      hoje
+    );
 
-    const salariosPendentesLancamento = Math.max(0, salariosDevidosAteHoje - salariosProcessadosNoMes);
+    // Calcula quanto dos salários devidos já foi processado neste mês
+    const salariosProcessadosNoMes = this.calcularSalariosProcessadosNoMes(
+      salarios,
+      inicioMes
+    );
+
+    const salariosPendentesLancamento = Math.max(
+      0,
+      salariosDevidosAteHoje - salariosProcessadosNoMes
+    );
     const saldoContas = somarCampo(contas, 'saldo');
 
     // Calcula entradas e saídas do mês (SEM incluir salários)
@@ -122,17 +151,28 @@ class ResumoService {
       salarios: salariosDevidosAteHoje,
       saldoContas,
       entradas,
-      saidas
+      saidas,
     };
   }
 
   // Gera projeção financeira considerando transações pendentes
   async gerarProjecao(usuarioId) {
     const hoje = new Date();
-    const inicioMes = new Date(hoje.getFullYear(), hoje.getMonth(), 1, 0, 0, 0, 0);
+    const inicioMes = new Date(
+      hoje.getFullYear(),
+      hoje.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0
+    );
 
     const categoriaSalario = await this.buscarCategoriaSalario();
-    const salarios = await this.buscarSalariosAtivos(usuarioId, categoriaSalario);
+    const salarios = await this.buscarSalariosAtivos(
+      usuarioId,
+      categoriaSalario
+    );
 
     const contas = await Conta.find({ usuario: usuarioId });
 
@@ -140,7 +180,7 @@ class ResumoService {
     const filtroPendentes = {
       usuario: usuarioId,
       ativa: true,
-      status: 'pendente'
+      status: 'pendente',
     };
 
     const filtroPendentesSemSalario = this.adicionarExclusaoCategoriaSalario(
@@ -150,12 +190,21 @@ class ResumoService {
 
     const pendentes = await Transacao.find(filtroPendentesSemSalario);
 
-    const salariosDevidosAteHoje = this.calcularSalariosDevidosAteHoje(salarios, hoje);
-    
-    // Calcula quanto dos salários devidos já foi processado neste mês
-    const salariosProcessadosNoMes = this.calcularSalariosProcessadosNoMes(salarios, inicioMes);
+    const salariosDevidosAteHoje = this.calcularSalariosDevidosAteHoje(
+      salarios,
+      hoje
+    );
 
-    const salariosPendentesLancamento = Math.max(0, salariosDevidosAteHoje - salariosProcessadosNoMes);
+    // Calcula quanto dos salários devidos já foi processado neste mês
+    const salariosProcessadosNoMes = this.calcularSalariosProcessadosNoMes(
+      salarios,
+      inicioMes
+    );
+
+    const salariosPendentesLancamento = Math.max(
+      0,
+      salariosDevidosAteHoje - salariosProcessadosNoMes
+    );
 
     const saldoContas = somarCampo(contas, 'saldo');
     const saidasPendentes = somaSaidas(pendentes);
@@ -167,10 +216,9 @@ class ResumoService {
     return {
       saldoAtual,
       saldoProjetado,
-      saidasPendentes
+      saidasPendentes,
     };
   }
-
 }
 
 module.exports = new ResumoService();

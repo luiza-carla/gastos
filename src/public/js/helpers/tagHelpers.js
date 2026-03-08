@@ -71,7 +71,7 @@ export function inicializarTags(tags) {
   });
 
   // Adiciona tag ao pressionar Enter
-  input.addEventListener('keypress', e => {
+  input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       adicionarTag();
@@ -84,12 +84,18 @@ export function gerarTags(tagsArray) {
   if (!tagsArray?.length) return '';
 
   return tagsArray
-    .map(tag => `<span class="tag">${escaparHtml(tag)}</span>`)
+    .map((tag) => `<span class="tag">${escaparHtml(tag)}</span>`)
     .join('');
 }
 
 // Inicializa editor de tags reutilizavel para modais
-export function inicializarEditorTags({ tags, containerId, inputId, addButtonId, maxTags = 3 }) {
+export function inicializarEditorTags({
+  tags,
+  containerId,
+  inputId,
+  addButtonId,
+  maxTags = 3,
+}) {
   const container = $(containerId);
   const input = $(inputId);
   const btnAdd = $(addButtonId);
@@ -130,7 +136,7 @@ export function inicializarEditorTags({ tags, containerId, inputId, addButtonId,
   };
 
   btnAdd.addEventListener('click', adicionarTag);
-  input.addEventListener('keypress', e => {
+  input.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       adicionarTag();
@@ -145,7 +151,7 @@ export function resetarTagsFormulario(tags, options = {}) {
   const {
     containerId = 'tagsContainer',
     inputId = 'tagInput',
-    btnNovaId = 'btnNovaTag'
+    btnNovaId = 'btnNovaTag',
   } = options;
 
   tags.length = 0;

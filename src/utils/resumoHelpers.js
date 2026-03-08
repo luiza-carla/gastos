@@ -7,7 +7,7 @@ function somarCampo(lista = [], campo) {
 function totaisTransacoes(transacoes = []) {
   let entradas = 0;
   let saidas = 0;
-  transacoes.forEach(t => {
+  transacoes.forEach((t) => {
     if (t.tipo === 'entrada') entradas += Number(t.valor);
     if (t.tipo === 'saida') saidas += Number(t.valor);
   });
@@ -22,5 +22,5 @@ function somaSaidas(transacoes = []) {
 module.exports = {
   somarCampo,
   totaisTransacoes,
-  somaSaidas
+  somaSaidas,
 };

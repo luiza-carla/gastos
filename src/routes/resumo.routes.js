@@ -7,6 +7,10 @@ const asyncHandler = require('../middlewares/asyncHandler');
 
 router.get('/', autenticacao, asyncHandler(ResumoController.obterResumo));
 
-router.get('/projecao', autenticacao, asyncHandler(ResumoController.obterProjecao));
+router.get(
+  '/projecao',
+  autenticacao,
+  asyncHandler(ResumoController.obterProjecao)
+);
 
 module.exports = router;

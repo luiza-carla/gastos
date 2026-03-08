@@ -12,7 +12,15 @@ class SalarioController {
 
   // Obtém primeira data do mês para uma data de referência
   obterInicioMes(dataReferencia = new Date()) {
-    return new Date(dataReferencia.getFullYear(), dataReferencia.getMonth(), 1, 0, 0, 0, 0);
+    return new Date(
+      dataReferencia.getFullYear(),
+      dataReferencia.getMonth(),
+      1,
+      0,
+      0,
+      0,
+      0
+    );
   }
 
   // Verifica se salário já foi processado no mês atual
@@ -21,7 +29,10 @@ class SalarioController {
       return false;
     }
 
-    return new Date(salario.dataUltimoProcessamento) >= this.obterInicioMes(dataReferencia);
+    return (
+      new Date(salario.dataUltimoProcessamento) >=
+      this.obterInicioMes(dataReferencia)
+    );
   }
 
   // Verifica se salário deve ser processado na data informada
@@ -84,7 +95,7 @@ class SalarioController {
 
     const salarios = await Transacao.find({
       usuario: req.user.id,
-      categoria: categoriaSalario._id
+      categoria: categoriaSalario._id,
     })
       .populate('conta', 'nome tipo')
       .populate('categoria', 'nome');
@@ -97,7 +108,9 @@ class SalarioController {
     const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
 
     if (!categoriaSalario) {
-      return res.status(400).json({ mensagem: 'Categoria Salário não encontrada' });
+      return res
+        .status(400)
+        .json({ mensagem: 'Categoria Salário não encontrada' });
     }
 
     const contaId = this.extrairContaId(req.body.conta);
@@ -112,14 +125,16 @@ class SalarioController {
       tipo: 'entrada',
       titulo: req.body.titulo || 'Salário',
       status: 'pendente',
-      ativa: true
+      ativa: true,
     });
-
 
     if (this.salarioDeveSerProcessadoAgora(salario, hoje)) {
       const contaSalarioId = this.extrairContaId(salario.conta);
       if (contaSalarioId) {
-        await this.aplicarDeltaContas({ [contaSalarioId]: salario.valor }, req.user.id);
+        await this.aplicarDeltaContas(
+          { [contaSalarioId]: salario.valor },
+          req.user.id
+        );
       }
 
       await Transacao.updateOne(
@@ -140,13 +155,15 @@ class SalarioController {
     const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
 
     if (!categoriaSalario) {
-      return res.status(400).json({ mensagem: 'Categoria Salário não encontrada' });
+      return res
+        .status(400)
+        .json({ mensagem: 'Categoria Salário não encontrada' });
     }
 
     const transacaoAntiga = await Transacao.findOne({
       _id: req.params.id,
       usuario: req.user.id,
-      categoria: categoriaSalario._id
+      categoria: categoriaSalario._id,
     });
 
     if (!transacaoAntiga) {
@@ -154,10 +171,13 @@ class SalarioController {
     }
 
     const hoje = new Date();
-    const antigoProcessadoNoMes = this.salarioJaProcessadoNoMes(transacaoAntiga, hoje);
+    const antigoProcessadoNoMes = this.salarioJaProcessadoNoMes(
+      transacaoAntiga,
+      hoje
+    );
 
     const payloadAtualizacao = {
-      ...req.body
+      ...req.body,
     };
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'conta')) {
@@ -165,14 +185,21 @@ class SalarioController {
     }
 
     const salario = await Transacao.findOneAndUpdate(
-      { _id: req.params.id, usuario: req.user.id, categoria: categoriaSalario._id },
+      {
+        _id: req.params.id,
+        usuario: req.user.id,
+        categoria: categoriaSalario._id,
+      },
       payloadAtualizacao,
       { returnDocument: 'after' }
     )
       .populate('conta', 'nome tipo')
       .populate('categoria', 'nome');
 
-    const novoProcessadoNoMes = this.salarioDeveSerProcessadoAgora(salario, hoje);
+    const novoProcessadoNoMes = this.salarioDeveSerProcessadoAgora(
+      salario,
+      hoje
+    );
 
     const deltas = {};
 
@@ -180,7 +207,8 @@ class SalarioController {
     const contaNovaId = this.extrairContaId(salario.conta);
 
     if (antigoProcessadoNoMes && contaAntigaId) {
-      deltas[contaAntigaId] = (deltas[contaAntigaId] || 0) - transacaoAntiga.valor;
+      deltas[contaAntigaId] =
+        (deltas[contaAntigaId] || 0) - transacaoAntiga.valor;
     }
 
     if (novoProcessadoNoMes && contaNovaId) {
@@ -193,7 +221,7 @@ class SalarioController {
       { _id: salario._id },
       {
         dataUltimoProcessamento: novoProcessadoNoMes ? hoje : null,
-        status: novoProcessadoNoMes ? 'pago' : 'pendente'
+        status: novoProcessadoNoMes ? 'pago' : 'pendente',
       }
     );
 
@@ -209,13 +237,15 @@ class SalarioController {
     const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
 
     if (!categoriaSalario) {
-      return res.status(400).json({ mensagem: 'Categoria Salário não encontrada' });
+      return res
+        .status(400)
+        .json({ mensagem: 'Categoria Salário não encontrada' });
     }
 
     const salario = await Transacao.findOne({
       _id: req.params.id,
       usuario: req.user.id,
-      categoria: categoriaSalario._id
+      categoria: categoriaSalario._id,
     });
 
     if (!salario) {
@@ -224,14 +254,16 @@ class SalarioController {
 
     const contaSalarioId = this.extrairContaId(salario.conta);
     if (this.salarioJaProcessadoNoMes(salario) && contaSalarioId) {
-      await this.aplicarDeltaContas({ [contaSalarioId]: -salario.valor }, req.user.id);
+      await this.aplicarDeltaContas(
+        { [contaSalarioId]: -salario.valor },
+        req.user.id
+      );
     }
 
     await salario.deleteOne();
 
     res.json({ mensagem: 'Salário deletado' });
   }
-
 }
 
 module.exports = new SalarioController();

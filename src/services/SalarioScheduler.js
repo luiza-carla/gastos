@@ -18,7 +18,7 @@ class SalarioScheduler {
     });
 
     console.log('Agendador de salários iniciado');
-    
+
     // Executa imediatamente ao iniciar (útil para testes/desenvolvimento)
     this.processarSalariosDodia();
   }
@@ -52,8 +52,10 @@ class SalarioScheduler {
         ativa: true,
         frequencia: 'mensal',
         diaRecebimento: diaAtual,
-        conta: { $exists: true, $ne: null }
-      }).populate('usuario').populate('conta');
+        conta: { $exists: true, $ne: null },
+      })
+        .populate('usuario')
+        .populate('conta');
 
       if (salarios.length === 0) {
         console.log(`ℹNenhum salário para processar no dia ${diaAtual}`);
@@ -69,7 +71,8 @@ class SalarioScheduler {
         try {
           // Verifica se já foi processado este mês
           const ultimoProcessamento = salario.dataUltimoProcessamento;
-          const jaProcessadoEsteMes = ultimoProcessamento && new Date(ultimoProcessamento) >= inicioMes;
+          const jaProcessadoEsteMes =
+            ultimoProcessamento && new Date(ultimoProcessamento) >= inicioMes;
 
           if (jaProcessadoEsteMes) {
             console.log(`⏭Salário ${salario._id} já processado este mês`);
@@ -88,28 +91,24 @@ class SalarioScheduler {
           await salario.save();
 
           processados++;
-          console.log(`Salário processado: R$ ${salario.valor} para usuário ${salario.usuario._id}`);
-
+          console.log(
+            `Salário processado: R$ ${salario.valor} para usuário ${salario.usuario._id}`
+          );
         } catch (erro) {
           erros++;
-          console.error(`Erro ao processar salário ${salario._id}:`, erro.message);
+          console.error(
+            `Erro ao processar salário ${salario._id}:`,
+            erro.message
+          );
         }
       }
 
-      console.log(`Processamento concluído: ${processados} sucesso, ${erros} erros`);
-
+      console.log(
+        `Processamento concluído: ${processados} sucesso, ${erros} erros`
+      );
     } catch (erro) {
       console.error('Erro ao processar salários do dia:', erro);
     }
-  }
-
-  // Retorna o nome do mês em português
-  obterNomeMes(data) {
-    const meses = [
-      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
-      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
-    ];
-    return meses[data.getMonth()];
   }
 
   // Força o processamento manual de salários

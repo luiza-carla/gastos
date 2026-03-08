@@ -9,7 +9,7 @@ import { $ } from './helpers/index.js';
 
 (async function () {
   await verificarAutenticacao();
-  
+
   await import('./modalEditar.js');
 
   // Inicializa categorias
@@ -29,7 +29,6 @@ import { $ } from './helpers/index.js';
 
 // Inicializa contas
 (async function () {
-
   if ($('contas')) {
     await listarContas();
   }
@@ -43,7 +42,6 @@ import { $ } from './helpers/index.js';
       await popularSelectContas();
     });
   }
-
 })();
 
 // Inicializa lista de desejos
@@ -57,7 +55,6 @@ import { $ } from './helpers/index.js';
   }
 })();
 
-
 // Inicializa resumo financeiro
 (async function () {
   if ($('saldoFinal')) {
@@ -65,10 +62,8 @@ import { $ } from './helpers/index.js';
   }
 })();
 
-
 // Inicializa salarios
 (async function () {
-
   if ($('salariosContainer')) {
     await listarSalarios();
   }
@@ -80,5 +75,4 @@ import { $ } from './helpers/index.js';
   if ($('formSalario')) {
     criarSalario('formSalario');
   }
-
 })();

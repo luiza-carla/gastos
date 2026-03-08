@@ -3,14 +3,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 class UsuarioService {
-
   // Gera token JWT padrão para autenticação
   gerarToken(usuarioId) {
-    return jwt.sign(
-      { id: usuarioId },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    return jwt.sign({ id: usuarioId }, process.env.JWT_SECRET, {
+      expiresIn: '7d',
+    });
   }
 
   // Monta payload de autenticação com token e dados públicos do usuário
@@ -21,8 +18,8 @@ class UsuarioService {
         id: usuario._id,
         nome: usuario.nome,
         email: usuario.email,
-        salario: usuario.salario
-      }
+        salario: usuario.salario,
+      },
     };
   }
 
@@ -46,7 +43,7 @@ class UsuarioService {
       nome,
       email,
       senha: senhaHash,
-      salario
+      salario,
     });
 
     const token = this.gerarToken(novoUsuario._id);
@@ -81,7 +78,6 @@ class UsuarioService {
   async listar() {
     return Usuario.find().select('-senha');
   }
-
 }
 
 module.exports = new UsuarioService();

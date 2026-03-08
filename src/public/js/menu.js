@@ -29,7 +29,7 @@ export async function adicionarMenu() {
         onConfirmar: () => {
           fecharModal();
           logout();
-        }
+        },
       });
     });
   }

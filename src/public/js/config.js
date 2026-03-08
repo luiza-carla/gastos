@@ -13,8 +13,8 @@ export async function apiFetch(url, options = {}) {
   // Adiciona headers padrão (autent)
   options.headers = {
     'Content-Type': 'application/json',
-    'Authorization': token ? `Bearer ${token}` : '',
-    ...options.headers
+    Authorization: token ? `Bearer ${token}` : '',
+    ...options.headers,
   };
 
   // Faz requisição

@@ -1,16 +1,25 @@
-import { setHTMLById, showElement, hideElement, showModal, hideModal, $ } from './helpers/index.js';
+import {
+  setHTMLById,
+  showElement,
+  hideElement,
+  showModal,
+  hideModal,
+  $,
+} from './helpers/index.js';
 
 // Armazena callback de salvamento do modal
 let salvarCallback = null;
 
 // Abre modal de edicao com titulo e conteudo personalizados
 export function abrirModal({ titulo, conteudoHTML, onSalvar }) {
-
   // Atualiza titulo e conteudo do modal
   const modal = $('modalGlobal');
   const tituloEl = $('modalTitulo');
 
-  setHTMLById('modalTitulo', `<i class="fa-solid fa-pen-to-square"></i> ${titulo}`);
+  setHTMLById(
+    'modalTitulo',
+    `<i class="fa-solid fa-pen-to-square"></i> ${titulo}`
+  );
   setHTMLById('modalConteudo', conteudoHTML);
 
   // Define callback de salvar
@@ -32,14 +41,20 @@ export function fecharModal() {
 // Abre modal de erro com mensagem informada
 export function abrirModalErro(mensagem) {
   const tituloEl = $('modalTitulo');
-  
-  setHTMLById('modalTitulo', '<i class="fa-solid fa-circle-xmark" style="color: var(--vermelho-escuro);"></i> Erro');
-  setHTMLById('modalConteudo', `<p style="margin: 0; padding: 10px 0; color: #666; line-height: 1.6;">${mensagem}</p>`);
-  
+
+  setHTMLById(
+    'modalTitulo',
+    '<i class="fa-solid fa-circle-xmark" style="color: var(--vermelho-escuro);"></i> Erro'
+  );
+  setHTMLById(
+    'modalConteudo',
+    `<p style="margin: 0; padding: 10px 0; color: #666; line-height: 1.6;">${mensagem}</p>`
+  );
+
   hideElement($('modalFooterEditar'));
   hideElement($('modalFooterConfirmar'));
   showElement($('modalFooterErro'));
-  
+
   showModal();
 }
 
@@ -48,7 +63,11 @@ document.addEventListener('click', (e) => {
   if (e.target.id === 'modalSalvar') {
     if (salvarCallback) salvarCallback();
   }
-  if (e.target.id === 'modalCancelar' || e.target.id === 'modalFechar' || e.target.id === 'modalFecharErro') {
+  if (
+    e.target.id === 'modalCancelar' ||
+    e.target.id === 'modalFechar' ||
+    e.target.id === 'modalFecharErro'
+  ) {
     fecharModal();
   }
 });

@@ -1,35 +1,35 @@
-#btnProjecao{
-  margin-top:15px;
-  background:#84B082;
+#btnProjecao {
+  margin-top: 15px;
+  background: #84b082;
 }
 
-#btnProjecao:hover{
-  background:#6f9c95;
+#btnProjecao:hover {
+  background: #6f9c95;
 }
 
-#modalProjecao .modal-content p{
-  display:flex;
-  justify-content:space-between;
+#modalProjecao .modal-content p {
+  display: flex;
+  justify-content: space-between;
 
-  background:#fafafa;
+  background: #fafafa;
 
-  padding:12px 14px;
+  padding: 12px 14px;
 
-  border-radius:10px;
+  border-radius: 10px;
 
-  margin-bottom:10px;
+  margin-bottom: 10px;
 }
 
-#projSaldoAtual{
-  color:#2D232E;
+#projSaldoAtual {
+  color: #2d232e;
 }
 
-#projSaidasPendentes{
-  color:var(--vermelho);
+#projSaidasPendentes {
+  color: var(--vermelho);
 }
 
-#projSaldoFinal{
-  color:#84B082;
-  font-weight:700;
-  font-size:20px;
+#projSaldoFinal {
+  color: #84b082;
+  font-weight: 700;
+  font-size: 20px;
 }

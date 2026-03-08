@@ -1,19 +1,18 @@
 const Transacao = require('../models/Transacao');
 
 class TransacaoService {
-
   // Cria nova transação
   async criar(dados, usuarioId) {
     return Transacao.create({
       ...dados,
-      usuario: usuarioId
+      usuario: usuarioId,
     });
   }
 
   // Lista todas as transações do usuário com dados relacionados
   async listar(usuarioId) {
     return Transacao.find({ usuario: usuarioId })
-      .populate('conta', 'nome tipo')     
+      .populate('conta', 'nome tipo')
       .populate('categoria', 'nome tipo cor')
       .select('-__v');
   }
@@ -31,11 +30,13 @@ class TransacaoService {
 
   // Deleta transação
   async deletar(id, usuarioId) {
-    const transacao = await Transacao.findOneAndDelete({ _id: id, usuario: usuarioId });
+    const transacao = await Transacao.findOneAndDelete({
+      _id: id,
+      usuario: usuarioId,
+    });
     if (!transacao) throw new Error('Transação não encontrada');
     return transacao;
   }
-
 }
 
 module.exports = new TransacaoService();

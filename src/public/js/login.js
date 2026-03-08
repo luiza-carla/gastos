@@ -6,7 +6,7 @@ const formLogin = document.getElementById('formLogin');
 const baseUrlUsuarios = window.location.origin + '/usuarios';
 
 // Trata envio do formulário de login
-formLogin.onsubmit = async e => {
+formLogin.onsubmit = async (e) => {
   e.preventDefault();
   try {
     // Recupera valores do formulário
@@ -16,7 +16,7 @@ formLogin.onsubmit = async e => {
     // Faz requisição de login
     const data = await apiFetch(`${baseUrlUsuarios}/login`, {
       method: 'POST',
-      body: JSON.stringify({ email, senha })
+      body: JSON.stringify({ email, senha }),
     });
 
     // Salva token e redireciona se sucesso

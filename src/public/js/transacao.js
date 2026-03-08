@@ -2,17 +2,37 @@ import { apiFetch } from './config.js';
 import { limparCategoriaSelecionada } from './categoria.js';
 import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
-import { formatarValor, capitalizar, criarCardsHTML, calcularTotalItens, showById, hideById, showElement, hideElement, $, setHTMLById, setTextById, escaparHtml, criarBadgeCategoria, inicializarTags, gerarTags, inicializarEditorTags, resetarTagsFormulario, setupCategoriaAutocomplete } from './helpers/index.js';
+import {
+  formatarValor,
+  capitalizar,
+  criarCardsHTML,
+  calcularTotalItens,
+  showById,
+  hideById,
+  showElement,
+  hideElement,
+  $,
+  setHTMLById,
+  setTextById,
+  escaparHtml,
+  criarBadgeCategoria,
+  inicializarTags,
+  gerarTags,
+  inicializarEditorTags,
+  resetarTagsFormulario,
+  setupCategoriaAutocomplete,
+} from './helpers/index.js';
 
 // Armazena tags temporarias do formulario
 let tags = [];
 
 // Inicializa envio do formulario de transacao
 export async function criarTransacao(formId = 'formTransacao') {
-
   const form = $(formId);
   const tipoSelect = $('tipo');
-  const tipoDespesaSelect = $('tipoDespesaContainer')?.querySelector('#tipoDespesa');
+  const tipoDespesaSelect = $('tipoDespesaContainer')?.querySelector(
+    '#tipoDespesa'
+  );
   const recorrenciaSelect = $('recorrencia');
   const parcelasContainer = $('parcelasContainer');
 
@@ -35,13 +55,13 @@ export async function criarTransacao(formId = 'formTransacao') {
   });
 
   // Envia dados da transacao para API
-  form?.addEventListener('submit', async e => {
-
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const conta = $('conta')?.value;
     const categoria = $('categoria')?.value;
-    const tipoDespesa = tipoSelect.value === 'saida' ? tipoDespesaSelect.value : null;
+    const tipoDespesa =
+      tipoSelect.value === 'saida' ? tipoDespesaSelect.value : null;
 
     await apiFetch(window.location.origin + '/transacoes', {
       method: 'POST',
@@ -57,9 +77,9 @@ export async function criarTransacao(formId = 'formTransacao') {
         tags: [...tags],
         parcelamento: {
           totalParcelas: Number(form.totalParcelas.value || 1),
-          parcelaAtual: Number(form.parcelaAtual.value || 1)
-        }
-      })
+          parcelaAtual: Number(form.parcelaAtual.value || 1),
+        },
+      }),
     });
 
     resetarTagsFormulario(tags);
@@ -73,37 +93,37 @@ export async function criarTransacao(formId = 'formTransacao') {
 
 // Lista transacoes do usuario na tela
 export async function listarTransacoes() {
-
   const container = $('transacoes');
-// Gera HTML de um card de transacao
+  // Gera HTML de um card de transacao
   if (!container) return;
 
   const transacoes = await apiFetch(window.location.origin + '/transacoes');
-  const total = calcularTotalItens(transacoes, t =>
+  const total = calcularTotalItens(transacoes, (t) =>
     t.tipo === 'saida' ? -Number(t.valor || 0) : Number(t.valor || 0)
   );
-// Gera HTML das tags da transacao
+  // Gera HTML das tags da transacao
 
   setTextById('totalTransacoes', `R$ ${formatarValor(total)}`);
 
   setHTMLById('transacoes', criarCardsHTML(transacoes, criarCardTransacao));
 }
 
-
 function criarCardTransacao(t) {
-
-  const tipoClasse = t.tipo === 'entrada'
-    ? 'transacao-entrada'
-    : 'transacao-saida';
+  const tipoClasse =
+    t.tipo === 'entrada' ? 'transacao-entrada' : 'transacao-saida';
 
   const tipoCapitalizado = capitalizar(t.tipo);
-  const tipoDespesaCapitalizado = t.tipoDespesa ? capitalizar(t.tipoDespesa) : '';
-  const recorrenciaCapitalizada = t.recorrencia && t.recorrencia.toLowerCase() !== 'nenhuma'
-    ? capitalizar(t.recorrencia)
+  const tipoDespesaCapitalizado = t.tipoDespesa
+    ? capitalizar(t.tipoDespesa)
     : '';
+  const recorrenciaCapitalizada =
+    t.recorrencia && t.recorrencia.toLowerCase() !== 'nenhuma'
+      ? capitalizar(t.recorrencia)
+      : '';
   const statusCapitalizado = capitalizar(t.status);
-  
-  const temRecorrencia = t.recorrencia && t.recorrencia.toLowerCase() !== 'nenhuma';
+
+  const temRecorrencia =
+    t.recorrencia && t.recorrencia.toLowerCase() !== 'nenhuma';
 
   const valorFormatado = formatarValor(t.valor);
 
@@ -156,15 +176,23 @@ function criarCardTransacao(t) {
             <span class="info-valor">${recorrenciaCapitalizada || 'Nenhuma'}</span>
           </div>
 
-          ${temRecorrencia ? `<div class="info-linha">
+          ${
+            temRecorrencia
+              ? `<div class="info-linha">
             <span class="info-label">Parcela:</span>
             <span class="info-valor">${parcelaAtual}/${totalParcelas}</span>
-          </div>` : ''}
+          </div>`
+              : ''
+          }
         </div>
 
-        ${tags ? `<div class="transacao-tags">
+        ${
+          tags
+            ? `<div class="transacao-tags">
           ${tags}
-        </div>` : ''}
+        </div>`
+            : ''
+        }
       </div>
 
       <div class="transacao-acoes">
@@ -181,9 +209,10 @@ function criarCardTransacao(t) {
 }
 
 // Abre modal para edicao de transacao
-window.editarTransacao = async id => {
-
-  const transacao = (await apiFetch(window.location.origin + '/transacoes')).find(t => t._id === id);
+window.editarTransacao = async (id) => {
+  const transacao = (
+    await apiFetch(window.location.origin + '/transacoes')
+  ).find((t) => t._id === id);
   const categorias = await apiFetch(window.location.origin + '/categorias');
 
   if (!transacao) return;
@@ -255,7 +284,14 @@ window.editarTransacao = async id => {
       const novaCategoria = $('modalCategoriaTransacao')?.value;
       const novoTipoDespesa = $('modalTipoDespesa')?.value;
 
-      if (!novoTitulo || !novoValor || !novoTipo || !novoStatus || !novaCategoria) return;
+      if (
+        !novoTitulo ||
+        !novoValor ||
+        !novoTipo ||
+        !novoStatus ||
+        !novaCategoria
+      )
+        return;
 
       const dados = {
         titulo: novoTitulo,
@@ -263,7 +299,7 @@ window.editarTransacao = async id => {
         tipo: novoTipo,
         status: novoStatus,
         categoria: novaCategoria,
-        tags: tagsModal
+        tags: tagsModal,
       };
 
       if (novoTipo === 'saida') {
@@ -272,19 +308,19 @@ window.editarTransacao = async id => {
 
       await apiFetch(`${window.location.origin}/transacoes/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(dados)
+        body: JSON.stringify(dados),
       });
 
       fecharModal();
       listarTransacoes();
-    }
+    },
   });
 
   inicializarEditorTags({
     tags: tagsModal,
     containerId: 'modalTagsContainer',
     inputId: 'modalTagInput',
-    addButtonId: 'modalBtnAddTag'
+    addButtonId: 'modalBtnAddTag',
   });
 
   setupCategoriaAutocomplete(
@@ -320,15 +356,14 @@ window.editarTransacao = async id => {
   }
 };
 
-window.deletarTransacao = async id => {
-
+window.deletarTransacao = async (id) => {
   abrirModalConfirmacao({
     titulo: 'Confirmar exclusão',
     mensagem: 'Tem certeza que deseja deletar esta transação?',
     onConfirmar: async () => {
       try {
         await apiFetch(`${window.location.origin}/transacoes/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
         });
         fecharModal();
         listarTransacoes();
@@ -336,7 +371,7 @@ window.deletarTransacao = async id => {
         fecharModal();
         abrirModalErro(err.message);
       }
-    }
+    },
   });
 };
 

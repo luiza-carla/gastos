@@ -1,17 +1,24 @@
 import { apiFetch } from './config.js';
 import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
-import { formatarValor, criarOpcao, criarCardsHTML, capitalizar, $, clearElement, setHTMLById } from './helpers/index.js';
+import {
+  formatarValor,
+  criarOpcao,
+  criarCardsHTML,
+  capitalizar,
+  $,
+  clearElement,
+  setHTMLById,
+} from './helpers/index.js';
 
 // Lista todas as contas do usuário
-export async function listarContas(){
+export async function listarContas() {
+  const contas = await apiFetch('/contas');
 
-const contas = await apiFetch('/contas');
+  const container = $('contas');
 
-const container = $('contas');
-
-if (container) {
-  const gerarCard = c => `
+  if (container) {
+    const gerarCard = (c) => `
   <div class="conta-card">
 
   <div class="conta-nome">
@@ -42,18 +49,17 @@ if (container) {
   </div>
   `;
 
-  setHTMLById('contas', criarCardsHTML(contas, gerarCard));
-}
+    setHTMLById('contas', criarCardsHTML(contas, gerarCard));
+  }
 
-return contas;
-
+  return contas;
 }
 
 // Cria nova conta a partir de formulário
 export async function criarConta(formId, callback) {
   const form = $(formId);
 
-  form?.addEventListener('submit', async e => {
+  form?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     await apiFetch(window.location.origin + '/contas', {
@@ -61,8 +67,8 @@ export async function criarConta(formId, callback) {
       body: JSON.stringify({
         nome: form.nome.value,
         tipo: form.tipo.value,
-        saldo: Number(form.saldoInicial.value || 0)
-      })
+        saldo: Number(form.saldoInicial.value || 0),
+      }),
     });
 
     listarContas();
@@ -71,7 +77,7 @@ export async function criarConta(formId, callback) {
 }
 
 // Abre modal para editar conta existente
-window.editarConta = async id => {
+window.editarConta = async (id) => {
   abrirModal({
     titulo: 'Editar conta',
     conteudoHTML: `
@@ -100,25 +106,25 @@ window.editarConta = async id => {
         method: 'PUT',
         body: JSON.stringify({
           nome: novoNome,
-          tipo: novoTipo
-        })
+          tipo: novoTipo,
+        }),
       });
 
       fecharModal();
       listarContas();
-    }
+    },
   });
 };
 
 // Abre modal de confirmação para deletar conta
-window.deletarConta = async id => {
+window.deletarConta = async (id) => {
   abrirModalConfirmacao({
     titulo: 'Confirmar exclusão',
     mensagem: 'Tem certeza que deseja deletar esta conta?',
     onConfirmar: async () => {
       try {
         await apiFetch(`${window.location.origin}/contas/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
         });
         fecharModal();
         listarContas();
@@ -126,7 +132,7 @@ window.deletarConta = async id => {
         fecharModal();
         abrirModalErro(err.message);
       }
-    }
+    },
   });
 };
 
@@ -139,7 +145,7 @@ export async function popularSelectContas(selectId = 'conta') {
 
   clearElement(select);
 
-  contas.forEach(c => {
+  contas.forEach((c) => {
     select.innerHTML += criarOpcao(c._id, `${c.nome} (${capitalizar(c.tipo)})`);
   });
 }

@@ -1,44 +1,43 @@
-.lista-registros{
-  display:flex;
-  flex-direction:column;
-  gap:10px;
+.lista-registros {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-#salariosContainer{
-  margin-top:15px;
+#salariosContainer {
+  margin-top: 15px;
 }
 
-.salario-item{
+.salario-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
+  padding: 12px 16px;
 
-  padding:12px 16px;
+  background: var(--cinza-claro);
 
-  background:var(--cinza-claro);
+  border-radius: 10px;
 
-  border-radius:10px;
+  border-left: 4px solid var(--verde);
 
-  border-left:4px solid var(--verde);
-
-  font-weight:500;
+  font-weight: 500;
 }
 
-.salario-valor{
-  color:var(--verde);
-  font-weight:600;
+.salario-valor {
+  color: var(--verde);
+  font-weight: 600;
 }
 
 .salario-conta,
-.salario-dia{
-  font-size:0.9em;
-  color:var(--cinza-escuro);
-  margin-top:4px;
+.salario-dia {
+  font-size: 0.9em;
+  color: var(--cinza-escuro);
+  margin-top: 4px;
 }
 
-.salario-dia{
-  font-size:0.85em;
-  color:var(--azul);
-  font-weight:500;
+.salario-dia {
+  font-size: 0.85em;
+  color: var(--azul);
+  font-weight: 500;
 }

@@ -1,7 +1,22 @@
-import { removerAcentos, setHTMLById, addClass, removeClass, escaparHtml, $, showElement, hideElement } from './index.js';
+import {
+  removerAcentos,
+  setHTMLById,
+  addClass,
+  removeClass,
+  escaparHtml,
+  $,
+  showElement,
+  hideElement,
+} from './index.js';
 
 // Configura autocomplete de categorias reutilizável para modais
-export function setupCategoriaAutocomplete(inputId, inputHiddenId, dropdownId, categorias, onSelect) {
+export function setupCategoriaAutocomplete(
+  inputId,
+  inputHiddenId,
+  dropdownId,
+  categorias,
+  onSelect
+) {
   const inputBusca = $(inputId);
   const inputHidden = $(inputHiddenId);
   const dropdown = $(dropdownId);
@@ -23,22 +38,28 @@ export function setupCategoriaAutocomplete(inputId, inputHiddenId, dropdownId, c
 
   const mostrarDropdown = (categoriasFiltradas) => {
     if (categoriasFiltradas.length === 0) {
-      setHTMLById(dropdownId, '<div class="categoria-item">Nenhuma categoria encontrada</div>');
+      setHTMLById(
+        dropdownId,
+        '<div class="categoria-item">Nenhuma categoria encontrada</div>'
+      );
       addClass(dropdown, 'show');
       showElement(dropdown);
       return;
     }
 
-    const html = categoriasFiltradas.map(cat => 
-      `<div class="categoria-item" data-id="${cat._id}" data-nome="${escaparHtml(cat.nome)}" data-cor="${cat.cor}">
+    const html = categoriasFiltradas
+      .map(
+        (cat) =>
+          `<div class="categoria-item" data-id="${cat._id}" data-nome="${escaparHtml(cat.nome)}" data-cor="${cat.cor}">
         <span class="categoria-cor" style="background:${cat.cor};"></span>
         <span class="categoria-nome">${escaparHtml(cat.nome)}</span>
       </div>`
-    ).join('');
+      )
+      .join('');
 
     setHTMLById(dropdownId, html);
 
-    dropdown.querySelectorAll('.categoria-item').forEach(item => {
+    dropdown.querySelectorAll('.categoria-item').forEach((item) => {
       item.addEventListener('click', () => {
         const id = item.getAttribute('data-id');
         const nome = item.getAttribute('data-nome');
@@ -62,7 +83,7 @@ export function setupCategoriaAutocomplete(inputId, inputHiddenId, dropdownId, c
   const filtrar = (textoBusca) => {
     const termo = removerAcentos(textoBusca.toLowerCase().trim());
     const categoriasFiltradas = termo
-      ? categorias.filter(cat => 
+      ? categorias.filter((cat) =>
           removerAcentos(cat.nome.toLowerCase()).includes(termo)
         )
       : categorias;
@@ -90,7 +111,8 @@ export function setupCategoriaAutocomplete(inputId, inputHiddenId, dropdownId, c
 
   // Fecha ao clicar fora
   const handler = (e) => {
-    const autocomplete = dropdown.closest('.categoria-autocomplete') || dropdown.parentElement;
+    const autocomplete =
+      dropdown.closest('.categoria-autocomplete') || dropdown.parentElement;
     if (autocomplete && !autocomplete.contains(e.target)) {
       removeClass(dropdown, 'show');
       hideElement(dropdown);
@@ -117,6 +139,6 @@ export function setupCategoriaAutocomplete(inputId, inputHiddenId, dropdownId, c
     },
     filtrar: (textoBusca = '') => {
       filtrar(textoBusca);
-    }
+    },
   };
 }

@@ -2,7 +2,6 @@ const Transacao = require('../models/Transacao');
 const Conta = require('../models/Conta');
 
 class TransacaoController {
-
   // Cria nova transação e atualiza saldo da conta
   async criar(req, res) {
     // Desestrutura campos da requisição
@@ -17,7 +16,7 @@ class TransacaoController {
       recorrencia,
       parcelamento,
       tags,
-      tipoDespesa
+      tipoDespesa,
     } = req.body;
 
     // Cria nova transação no banco
@@ -33,10 +32,10 @@ class TransacaoController {
       recorrencia: recorrencia || 'nenhuma',
       parcelamento: {
         totalParcelas: parcelamento?.totalParcelas || 1,
-        parcelaAtual: parcelamento?.parcelaAtual || 1
+        parcelaAtual: parcelamento?.parcelaAtual || 1,
       },
       tags: tags || [],
-      tipoDespesa: tipo === 'saida' ? tipoDespesa : undefined
+      tipoDespesa: tipo === 'saida' ? tipoDespesa : undefined,
     });
 
     // Atualiza saldo da conta se transação foi marcada como paga
@@ -69,7 +68,7 @@ class TransacaoController {
 
     // Monta filtro para excluir salários das transações
     const filtro = {
-      usuario: req.user.id
+      usuario: req.user.id,
     };
 
     if (categoriaSalario) {
@@ -89,7 +88,7 @@ class TransacaoController {
     // Busca transação antiga para comparar alterações
     const transacaoAntiga = await Transacao.findOne({
       _id: req.params.id,
-      usuario: req.user.id
+      usuario: req.user.id,
     });
 
     if (!transacaoAntiga) {
@@ -144,7 +143,7 @@ class TransacaoController {
     // Busca transação antes de deletar
     const transacao = await Transacao.findOne({
       _id: req.params.id,
-      usuario: req.user.id
+      usuario: req.user.id,
     });
 
     if (!transacao) {
@@ -169,7 +168,6 @@ class TransacaoController {
 
     res.json({ mensagem: 'Transação deletada' });
   }
-
 }
 
 module.exports = new TransacaoController();

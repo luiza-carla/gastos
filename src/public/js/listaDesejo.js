@@ -2,7 +2,22 @@ import { apiFetch } from './config.js';
 import { limparCategoriaSelecionada } from './categoria.js';
 import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
-import { formatarValor, capitalizar, criarCardsHTML, calcularTotalItens, $, setHTMLById, setTextById, escaparHtml, criarBadgeCategoria, inicializarTags, gerarTags, inicializarEditorTags, resetarTagsFormulario, setupCategoriaAutocomplete } from './helpers/index.js';
+import {
+  formatarValor,
+  capitalizar,
+  criarCardsHTML,
+  calcularTotalItens,
+  $,
+  setHTMLById,
+  setTextById,
+  escaparHtml,
+  criarBadgeCategoria,
+  inicializarTags,
+  gerarTags,
+  inicializarEditorTags,
+  resetarTagsFormulario,
+  setupCategoriaAutocomplete,
+} from './helpers/index.js';
 
 // Array para armazenar tags temporárias do formulário
 let tags = [];
@@ -12,7 +27,7 @@ export async function criarDesejo(formId = 'formListaDesejo') {
   const form = $(formId);
   if (!form) return;
 
-  form.addEventListener('submit', async e => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const categoria = $('categoria')?.value;
@@ -32,8 +47,8 @@ export async function criarDesejo(formId = 'formListaDesejo') {
         valor: Number(form.valor.value),
         categoria,
         tipoDespesa: tipoDespesa || undefined,
-        tags: [...tags]
-      })
+        tags: [...tags],
+      }),
     });
 
     // Reseta estado do formulário
@@ -61,7 +76,9 @@ export async function listarDesejos() {
 
 // Cria HTML de um card de desejo para exibicao na lista
 function criarCardDesejo(d) {
-  const tipoDespesaCapitalizado = d.tipoDespesa ? capitalizar(d.tipoDespesa) : '';
+  const tipoDespesaCapitalizado = d.tipoDespesa
+    ? capitalizar(d.tipoDespesa)
+    : '';
   const valorFormatado = formatarValor(d.valor);
   const categoria = criarBadgeCategoria(d.categoria);
   const corCategoria = d.categoria?.cor || '#95a5a6';
@@ -81,10 +98,14 @@ function criarCardDesejo(d) {
             <span class="info-valor">${categoria}</span>
           </div>
 
-          ${tipoDespesaCapitalizado ? `<div class="info-linha">
+          ${
+            tipoDespesaCapitalizado
+              ? `<div class="info-linha">
             <span class="info-label">Tipo de despesa:</span>
             <span class="info-valor">${tipoDespesaCapitalizado}</span>
-          </div>` : ''}
+          </div>`
+              : ''
+          }
         </div>
 
         ${tagsHtml ? `<div class="transacao-tags">${tagsHtml}</div>` : ''}
@@ -106,8 +127,10 @@ function criarCardDesejo(d) {
 }
 
 // Abre modal para editar item da lista de desejos
-window.editarDesejo = async id => {
-  const desejo = (await apiFetch(window.location.origin + '/lista-desejos')).find(item => item._id === id);
+window.editarDesejo = async (id) => {
+  const desejo = (
+    await apiFetch(window.location.origin + '/lista-desejos')
+  ).find((item) => item._id === id);
   const categorias = await apiFetch(window.location.origin + '/categorias');
 
   if (!desejo) return;
@@ -169,7 +192,7 @@ window.editarDesejo = async id => {
         titulo: novoTitulo,
         valor: novoValor,
         categoria: novaCategoria,
-        tags: tagsModal
+        tags: tagsModal,
       };
 
       if (novoTipoDespesa) {
@@ -178,19 +201,19 @@ window.editarDesejo = async id => {
 
       await apiFetch(`${window.location.origin}/lista-desejos/${id}`, {
         method: 'PUT',
-        body: JSON.stringify(dados)
+        body: JSON.stringify(dados),
       });
 
       fecharModal();
       listarDesejos();
-    }
+    },
   });
 
   inicializarEditorTags({
     tags: tagsModal,
     containerId: 'modalTagsContainerDesejo',
     inputId: 'modalTagInputDesejo',
-    addButtonId: 'modalBtnAddTagDesejo'
+    addButtonId: 'modalBtnAddTagDesejo',
   });
 
   setupCategoriaAutocomplete(
@@ -213,8 +236,10 @@ window.editarDesejo = async id => {
 };
 
 // Converte um desejo em transacao real e remove da lista
-window.realizarDesejo = async id => {
-  const desejo = (await apiFetch(window.location.origin + '/lista-desejos')).find(item => item._id === id);
+window.realizarDesejo = async (id) => {
+  const desejo = (
+    await apiFetch(window.location.origin + '/lista-desejos')
+  ).find((item) => item._id === id);
   const contas = await apiFetch(window.location.origin + '/contas');
 
   if (!desejo) return;
@@ -229,7 +254,7 @@ window.realizarDesejo = async id => {
         <label>Conta</label>
         <select id="modalContaDesejo" required>
           <option value="">-- Selecione uma conta --</option>
-          ${contas.map(c => `<option value="${c._id}">${escaparHtml(c.nome)}</option>`).join('')}
+          ${contas.map((c) => `<option value="${c._id}">${escaparHtml(c.nome)}</option>`).join('')}
         </select>
       </div>
       <div class="form-group">
@@ -283,14 +308,14 @@ window.realizarDesejo = async id => {
             recorrencia: 'nenhuma',
             parcelamento: {
               totalParcelas: 1,
-              parcelaAtual: 1
-            }
-          })
+              parcelaAtual: 1,
+            },
+          }),
         });
 
         // Remove o desejo da lista apos conversao bem-sucedida
         await apiFetch(`${window.location.origin}/lista-desejos/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
         });
 
         fecharModal();
@@ -300,19 +325,19 @@ window.realizarDesejo = async id => {
         fecharModal();
         abrirModalErro(err.message);
       }
-    }
+    },
   });
 };
 
 // Remove item da lista de desejos com confirmacao
-window.deletarDesejo = async id => {
+window.deletarDesejo = async (id) => {
   abrirModalConfirmacao({
     titulo: 'Confirmar exclusao',
     mensagem: 'Tem certeza que deseja deletar este item da lista de desejos?',
     onConfirmar: async () => {
       try {
         await apiFetch(`${window.location.origin}/lista-desejos/${id}`, {
-          method: 'DELETE'
+          method: 'DELETE',
         });
         fecharModal();
         listarDesejos();
@@ -320,7 +345,7 @@ window.deletarDesejo = async id => {
         fecharModal();
         abrirModalErro(err.message);
       }
-    }
+    },
   });
 };
 
