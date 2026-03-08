@@ -24,12 +24,12 @@
             <div class="form-grid">
               <div class="form-group">
                 <label>Título</label>
-                <input placeholder="Ex: Mercado" id="titulo" required>
+                <input id="titulo" required>
               </div>
 
               <div class="form-group">
                 <label>Valor</label>
-                <input placeholder="Ex: 120" id="valor" type="number" step="0.01" required>
+                <input id="valor" type="number" step="0.01" required>
               </div>
 
               <div class="form-group">
@@ -128,7 +128,12 @@
 
         <hr>
 
-        <h2><i class="fa-solid fa-list"></i> Transações</h2>
+        <h3><i class="fa-solid fa-list"></i> Transações</h3>
+
+        <div id="resumoTransacoes" class="resumo-listagem">
+          <span>Total estimado:</span>
+          <strong id="totalTransacoes" class="resumo-listagem-valor">R$ 0.00</strong>
+        </div>
 
         <div id="transacoes"></div>
       </div>

@@ -20,17 +20,17 @@
 
         <form id="formListaDesejo">
           <div class="card">
-            <h3><i class="fa-solid fa-plus"></i> Novo item desejado</h3>
+            <h3><i class="fa-solid fa-plus"></i> Novo desejo</h3>
 
             <div class="form-grid">
               <div class="form-group">
-                <label>Titulo</label>
-                <input placeholder="Ex: Viagem para praia" id="titulo" required>
+                <label>Título</label>
+                <input id="titulo" required>
               </div>
 
               <div class="form-group">
                 <label>Valor estimado</label>
-                <input placeholder="Ex: 1200" id="valor" type="number" step="0.01" required>
+                <input id="valor" type="number" step="0.01" required>
               </div>
             </div>
 
@@ -81,7 +81,12 @@
 
         <hr>
 
-        <h2><i class="fa-solid fa-list"></i> Itens planejados</h2>
+        <h3><i class="fa-solid fa-list"></i> Desejos </h3>
+
+        <div id="resumoDesejos" class="resumo-listagem">
+          <span>Total estimado:</span>
+          <strong id="totalDesejos" class="resumo-listagem-valor">R$ 0.00</strong>
+        </div>
 
         <div id="listaDesejos"></div>
       </div>

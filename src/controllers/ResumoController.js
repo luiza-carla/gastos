@@ -4,32 +4,22 @@ class ResumoController {
 
   // Obtém resumo financeiro do usuário
   async obterResumo(req, res) {
-    try {
-      // Recupera ID do usuário autenticado
-      const usuarioId = req.user.id; // string é suficiente para os métodos de serviço
+    // Recupera ID do usuário autenticado
+    const usuarioId = req.user.id; // string é suficiente para os métodos de serviço
 
-      // Gera resumo financeiro com dados do mês
-      const dados = await ResumoService.gerarResumo(usuarioId);
-      res.json(dados);
-
-    } catch (erro) {
-      res.status(500).json({ mensagem: erro.message });
-    }
+    // Gera resumo financeiro com dados do mês
+    const dados = await ResumoService.gerarResumo(usuarioId);
+    res.json(dados);
   }
 
   // Obtém projeção financeira futura do usuário
   async obterProjecao(req, res) {
-    try {
-      // Recupera ID do usuário autenticado
-      const usuarioId = req.user.id;
+    // Recupera ID do usuário autenticado
+    const usuarioId = req.user.id;
 
-      // Gera projeção financeira considerando transações pendentes
-      const dados = await ResumoService.gerarProjecao(usuarioId);
-      res.json(dados);
-
-    } catch (erro) {
-      res.status(500).json({ mensagem: erro.message });
-    }
+    // Gera projeção financeira considerando transações pendentes
+    const dados = await ResumoService.gerarProjecao(usuarioId);
+    res.json(dados);
   }
 
 }

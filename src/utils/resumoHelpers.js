@@ -16,11 +16,7 @@ function totaisTransacoes(transacoes = []) {
 
 // Calcula soma total de saídas
 function somaSaidas(transacoes = []) {
-  let saidas = 0;
-  transacoes.forEach(t => {
-    if (t.tipo === 'saida') saidas += Number(t.valor);
-  });
-  return saidas;
+  return totaisTransacoes(transacoes).saidas;
 }
 
 module.exports = {

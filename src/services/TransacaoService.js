@@ -4,11 +4,10 @@ class TransacaoService {
 
   // Cria nova transação
   async criar(dados, usuarioId) {
-    const transacao = await Transacao.create({
+    return Transacao.create({
       ...dados,
       usuario: usuarioId
     });
-    return transacao;
   }
 
   // Lista todas as transações do usuário com dados relacionados

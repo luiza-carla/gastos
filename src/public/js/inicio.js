@@ -1,5 +1,5 @@
 import { apiFetch } from './config.js';
-import { formatarValor, setTextById, showById, hideById, onEventById, $ } from './helpers/index.js';
+import { formatarValor, setTextById, showById, hideById, $ } from './helpers/index.js';
 
 // Carrega resumo financeiro do mês
 export async function carregarResumo() {
@@ -12,7 +12,7 @@ export async function carregarResumo() {
     setTextById('saldoContas', formatarValor(dados.saldoContas));
     setTextById('totalEntradas', formatarValor(dados.entradas));
     setTextById('totalSaidas', formatarValor(dados.saidas));
-    setTextById('saldoFinal', formatarValor(dados.saldoFinal));
+    setTextById('saldoFinal', formatarValor(dados.saldoFinal ?? dados.saldo));
 
   } catch (erro) {
     console.error("Erro ao carregar resumo:", erro);

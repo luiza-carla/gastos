@@ -98,6 +98,63 @@ gap:6px;
 flex:1;
 }
 
+.tag-editor-container{
+display:flex;
+flex-wrap:wrap;
+gap:6px;
+margin-bottom:10px;
+}
+
+.tag-editor-input-row{
+display:flex;
+gap:6px;
+}
+
+.tag-editor-input{
+flex:1;
+}
+
+.tag-chip-edit{
+margin-right:8px;
+cursor:pointer;
+padding:4px 8px;
+background:#eee;
+border-radius:6px;
+display:inline-block;
+font-size:13px;
+}
+
+.btn-tag-add{
+padding:8px 12px;
+border-radius:6px;
+background:var(--verde);
+color:white;
+border:none;
+cursor:pointer;
+font-weight:500;
+font-size:12px;
+}
+
+.btn-tag-add:hover{
+filter:brightness(0.95);
+}
+
+.resumo-listagem{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:12px 16px;
+background:var(--cinza-claro);
+border-radius:10px;
+margin-top:12px;
+color:var(--cinza-texto);
+}
+
+.resumo-listagem-valor{
+color:var(--verde);
+font-size:18px;
+}
+
 .transacao-card{
 background:white;
 border-radius:12px;
@@ -250,6 +307,7 @@ transform:scale(1.05);
 display:grid;
 grid-template-columns:repeat(2, 1fr);
 gap:16px;
+margin-top:15px;
 }
 
 @media (max-width: 1200px) {

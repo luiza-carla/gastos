@@ -3,8 +3,7 @@ const Conta = require('../models/Conta');
 class ContaService {
   // Cria nova conta
   async criar(dados) {
-    const conta = await Conta.create(dados);
-    return conta;
+    return Conta.create(dados);
   }
 
   // Lista todas as contas do usuário
@@ -29,7 +28,9 @@ class ContaService {
     // Valida se existem transações na conta
     const transCount = await Transacao.countDocuments({ conta: id, usuario: usuarioId });
     if (transCount > 0) {
-      throw new Error('Não é possível apagar a conta pois existem transações ou salários associados.');
+      const erro = new Error('Não é possível apagar a conta pois existem transações ou salários associados.');
+      erro.statusCode = 400;
+      throw erro;
     }
 
     return Conta.findByIdAndDelete(id);

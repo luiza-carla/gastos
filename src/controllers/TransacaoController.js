@@ -5,191 +5,169 @@ class TransacaoController {
 
   // Cria nova transação e atualiza saldo da conta
   async criar(req, res) {
-    try {
+    // Desestrutura campos da requisição
+    const {
+      conta,
+      titulo,
+      valor,
+      tipo,
+      categoria,
+      data,
+      status,
+      recorrencia,
+      parcelamento,
+      tags,
+      tipoDespesa
+    } = req.body;
 
-      // Desestrutura campos da requisição
-      const {
-        conta,
-        titulo,
-        valor,
-        tipo,
-        categoria,
-        data,
-        status,
-        recorrencia,
-        parcelamento,
-        tags,
-        tipoDespesa
-      } = req.body;
+    // Cria nova transação no banco
+    const novaTransacao = await Transacao.create({
+      usuario: req.user.id,
+      conta,
+      titulo,
+      valor,
+      tipo,
+      categoria,
+      data: data || Date.now(),
+      status: status || 'pago',
+      recorrencia: recorrencia || 'nenhuma',
+      parcelamento: {
+        totalParcelas: parcelamento?.totalParcelas || 1,
+        parcelaAtual: parcelamento?.parcelaAtual || 1
+      },
+      tags: tags || [],
+      tipoDespesa: tipo === 'saida' ? tipoDespesa : undefined
+    });
 
-      // Cria nova transação no banco
-      const novaTransacao = await Transacao.create({
-        usuario: req.user.id,
-        conta,
-        titulo,
-        valor,
-        tipo,
-        categoria,
-        data: data || Date.now(),
-        status: status || 'pago',
-        recorrencia: recorrencia || 'nenhuma',
-        parcelamento: {
-          totalParcelas: parcelamento?.totalParcelas || 1,
-          parcelaAtual: parcelamento?.parcelaAtual || 1
-        },
-        tags: tags || [],
-        tipoDespesa: tipo === 'saida' ? tipoDespesa : undefined
-      });
-
-      // Atualiza saldo da conta se transação foi marcada como paga
-      if (status === 'pago' || !status) {
-        const contaObj = await Conta.findById(conta);
-        if (contaObj) {
-          if (tipo === 'entrada') {
-            contaObj.saldo += valor;
-          } else if (tipo === 'saida') {
-            contaObj.saldo -= valor;
-          }
-          await contaObj.save();
+    // Atualiza saldo da conta se transação foi marcada como paga
+    if (status === 'pago' || !status) {
+      const contaObj = await Conta.findById(conta);
+      if (contaObj) {
+        if (tipo === 'entrada') {
+          contaObj.saldo += valor;
+        } else if (tipo === 'saida') {
+          contaObj.saldo -= valor;
         }
+        await contaObj.save();
       }
-
-      // Recupera transação completa com relações populadas
-      const transacaoCompleta = await Transacao.findById(novaTransacao._id)
-        .populate('conta', 'nome tipo')
-        .populate('categoria', 'nome cor tipo');
-
-      res.status(201).json(transacaoCompleta);
-
-    } catch (err) {
-      res.status(400).json({ mensagem: err.message });
     }
+
+    // Recupera transação completa com relações populadas
+    const transacaoCompleta = await Transacao.findById(novaTransacao._id)
+      .populate('conta', 'nome tipo')
+      .populate('categoria', 'nome cor tipo');
+
+    res.status(201).json(transacaoCompleta);
   }
 
   // Lista todas as transações do usuário (excluindo salários)
   async listar(req, res) {
-    try {
-      // Busca categoria salário para excluir das transações
-      const Categoria = require('../models/Categoria');
-      
-      const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
+    // Busca categoria salário para excluir das transações
+    const Categoria = require('../models/Categoria');
 
-      // Monta filtro para excluir salários das transações
-      const filtro = { 
-        usuario: req.user.id
-      };
+    const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
 
-      if (categoriaSalario) {
-        filtro.categoria = { $ne: categoriaSalario._id };
-      }
+    // Monta filtro para excluir salários das transações
+    const filtro = {
+      usuario: req.user.id
+    };
 
-      const transacoes = await Transacao.find(filtro)
-        .populate('conta', 'nome tipo')
-        .populate('categoria', 'nome cor tipo')
-        .sort({ data: -1 });
-
-      res.json(transacoes);
-
-    } catch (err) {
-      res.status(500).json({ mensagem: err.message });
+    if (categoriaSalario) {
+      filtro.categoria = { $ne: categoriaSalario._id };
     }
+
+    const transacoes = await Transacao.find(filtro)
+      .populate('conta', 'nome tipo')
+      .populate('categoria', 'nome cor tipo')
+      .sort({ data: -1 });
+
+    res.json(transacoes);
   }
 
   // Atualiza transação existente e reajusta saldos de contas
   async atualizar(req, res) {
-    try {
-      // Busca transação antiga para comparar alterações
-      const transacaoAntiga = await Transacao.findOne({
-        _id: req.params.id,
-        usuario: req.user.id
-      });
+    // Busca transação antiga para comparar alterações
+    const transacaoAntiga = await Transacao.findOne({
+      _id: req.params.id,
+      usuario: req.user.id
+    });
 
-      if (!transacaoAntiga) {
-        return res.status(404).json({ mensagem: 'Transação não encontrada' });
-      }
-
-      const updateData = { ...req.body };
-      // Remove tipoDespesa se tipo não for saída
-      if (updateData.tipo !== 'saida') {
-        delete updateData.tipoDespesa;
-      }
-
-      // Reverte saldo anterior se transação estava paga
-      if (transacaoAntiga.status === 'pago') {
-        const contaObj = await Conta.findById(transacaoAntiga.conta);
-        if (contaObj) {
-          if (transacaoAntiga.tipo === 'entrada') {
-            contaObj.saldo -= transacaoAntiga.valor;
-          } else if (transacaoAntiga.tipo === 'saida') {
-            contaObj.saldo += transacaoAntiga.valor;
-          }
-          await contaObj.save();
-        }
-      }
-
-      // Atualiza transação no banco
-      const transacao = await Transacao.findOneAndUpdate(
-        { _id: req.params.id, usuario: req.user.id },
-        updateData,
-        { returnDocument: 'after' }
-      )
-        .populate('conta', 'nome tipo')
-        .populate('categoria', 'nome cor tipo');
-
-      if (transacao.status === 'pago') {
-        const contaObj = await Conta.findById(transacao.conta);
-        if (contaObj) {
-          if (transacao.tipo === 'entrada') {
-            contaObj.saldo += transacao.valor;
-          } else if (transacao.tipo === 'saida') {
-            contaObj.saldo -= transacao.valor;
-          }
-          await contaObj.save();
-        }
-      }
-
-      res.json(transacao);
-
-    } catch (err) {
-      res.status(400).json({ mensagem: err.message });
+    if (!transacaoAntiga) {
+      return res.status(404).json({ mensagem: 'Transação não encontrada' });
     }
+
+    const updateData = { ...req.body };
+    // Remove tipoDespesa se tipo não for saída
+    if (updateData.tipo !== 'saida') {
+      delete updateData.tipoDespesa;
+    }
+
+    // Reverte saldo anterior se transação estava paga
+    if (transacaoAntiga.status === 'pago') {
+      const contaObj = await Conta.findById(transacaoAntiga.conta);
+      if (contaObj) {
+        if (transacaoAntiga.tipo === 'entrada') {
+          contaObj.saldo -= transacaoAntiga.valor;
+        } else if (transacaoAntiga.tipo === 'saida') {
+          contaObj.saldo += transacaoAntiga.valor;
+        }
+        await contaObj.save();
+      }
+    }
+
+    // Atualiza transação no banco
+    const transacao = await Transacao.findOneAndUpdate(
+      { _id: req.params.id, usuario: req.user.id },
+      updateData,
+      { returnDocument: 'after' }
+    )
+      .populate('conta', 'nome tipo')
+      .populate('categoria', 'nome cor tipo');
+
+    if (transacao.status === 'pago') {
+      const contaObj = await Conta.findById(transacao.conta);
+      if (contaObj) {
+        if (transacao.tipo === 'entrada') {
+          contaObj.saldo += transacao.valor;
+        } else if (transacao.tipo === 'saida') {
+          contaObj.saldo -= transacao.valor;
+        }
+        await contaObj.save();
+      }
+    }
+
+    res.json(transacao);
   }
 
   // Deleta transação e reverte saldo da conta
   async deletar(req, res) {
-    try {
+    // Busca transação antes de deletar
+    const transacao = await Transacao.findOne({
+      _id: req.params.id,
+      usuario: req.user.id
+    });
 
-      // Busca transação antes de deletar
-      const transacao = await Transacao.findOne({
-        _id: req.params.id,
-        usuario: req.user.id
-      });
-
-      if (!transacao) {
-        return res.status(404).json({ mensagem: 'Transação não encontrada' });
-      }
-
-      // Reverte saldo da conta se transação estava paga
-      if (transacao.status === 'pago') {
-        const contaObj = await Conta.findById(transacao.conta);
-        if (contaObj) {
-          if (transacao.tipo === 'entrada') {
-            contaObj.saldo -= transacao.valor;
-          } else if (transacao.tipo === 'saida') {
-            contaObj.saldo += transacao.valor;
-          }
-          await contaObj.save();
-        }
-      }
-
-      // Remove transação do banco
-      await Transacao.findByIdAndDelete(transacao._id);
-
-      res.json({ mensagem: 'Transação deletada' });
-
-    } catch (err) {
-      res.status(500).json({ mensagem: err.message });
+    if (!transacao) {
+      return res.status(404).json({ mensagem: 'Transação não encontrada' });
     }
+
+    // Reverte saldo da conta se transação estava paga
+    if (transacao.status === 'pago') {
+      const contaObj = await Conta.findById(transacao.conta);
+      if (contaObj) {
+        if (transacao.tipo === 'entrada') {
+          contaObj.saldo -= transacao.valor;
+        } else if (transacao.tipo === 'saida') {
+          contaObj.saldo += transacao.valor;
+        }
+        await contaObj.save();
+      }
+    }
+
+    // Remove transação do banco
+    await Transacao.findByIdAndDelete(transacao._id);
+
+    res.json({ mensagem: 'Transação deletada' });
   }
 
 }

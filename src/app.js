@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 require('dotenv').config();
 const cors = require('cors');
+const errorHandler = require('./middlewares/errorHandler');
 
 // Inicialização da aplicação
 const app = express();
@@ -34,5 +35,8 @@ app.use('/resumo', resumoRoutes);
 
 const listaDesejoRoutes = require('./routes/listaDesejo.routes');
 app.use('/lista-desejos', listaDesejoRoutes);
+
+// Middleware global de tratamento de erros (deve ficar por último)
+app.use(errorHandler);
 
 module.exports = app;

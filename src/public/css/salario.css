@@ -4,6 +4,10 @@
   gap:10px;
 }
 
+#salariosContainer{
+  margin-top:15px;
+}
+
 .salario-item{
 
   display:flex;

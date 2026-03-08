@@ -2,8 +2,7 @@ import { apiFetch } from './config.js';
 import { limparCategoriaSelecionada } from './categoria.js';
 import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
-import { formatarValor, capitalizar, criarCardsHTML, showById, hideById, setDisabledById, showElement, hideElement, $, clearElement, setHTMLById, escaparHtml } from './helpers/index.js';
-import { criarBadgeCategoria, atualizarTagsVisual, inicializarTags, gerarTags } from './helpers/tagHelpers.js';
+import { formatarValor, capitalizar, criarCardsHTML, calcularTotalItens, showById, hideById, showElement, hideElement, $, setHTMLById, setTextById, escaparHtml, criarBadgeCategoria, inicializarTags, gerarTags, inicializarEditorTags, resetarTagsFormulario, setupCategoriaAutocomplete } from './helpers/index.js';
 
 // Armazena tags temporarias do formulario
 let tags = [];
@@ -63,11 +62,7 @@ export async function criarTransacao(formId = 'formTransacao') {
       })
     });
 
-    tags.length = 0;
-    atualizarTagsVisual($('tagsContainer'), tags);
-
-    setDisabledById('btnNovaTag', false);
-    setDisabledById('tagInput', false);
+    resetarTagsFormulario(tags);
 
     form.reset();
     limparCategoriaSelecionada();
@@ -84,7 +79,12 @@ export async function listarTransacoes() {
   if (!container) return;
 
   const transacoes = await apiFetch(window.location.origin + '/transacoes');
+  const total = calcularTotalItens(transacoes, t =>
+    t.tipo === 'saida' ? -Number(t.valor || 0) : Number(t.valor || 0)
+  );
 // Gera HTML das tags da transacao
+
+  setTextById('totalTransacoes', `R$ ${formatarValor(total)}`);
 
   setHTMLById('transacoes', criarCardsHTML(transacoes, criarCardTransacao));
 }
@@ -188,6 +188,8 @@ window.editarTransacao = async id => {
 
   if (!transacao) return;
 
+  let tagsModal = [...(transacao.tags || [])];
+
   const tipoDespesaField = `
     <div class="form-group" id="modalGrupoTipoDespesa" style="display: ${transacao.tipo === 'saida' ? '' : 'none'};">
       <label>Tipo de Despesa</label>
@@ -205,7 +207,7 @@ window.editarTransacao = async id => {
     conteudoHTML: `
       <div class="form-group">
         <label>Título</label>
-        <input type="text" id="modalTituloTransacao" value="${transacao.titulo}">
+        <input type="text" id="modalTituloTransacao" value="${escaparHtml(transacao.titulo)}">
       </div>
       <div class="form-group">
         <label>Valor</label>
@@ -219,32 +221,53 @@ window.editarTransacao = async id => {
         </select>
       </div>
       <div class="form-group">
-        <label>Categoria</label>
-        <select id="modalCategoriaTransacao">
-          <option value="">-- Selecione --</option>
-          ${categorias.map(c => `<option value="${c._id}" ${transacao.categoria?._id === c._id ? 'selected' : ''}>${c.nome}</option>`).join('')}
+        <label>Status</label>
+        <select id="modalStatusTransacao">
+          <option value="pago" ${transacao.status === 'pago' ? 'selected' : ''}>Pago</option>
+          <option value="pendente" ${transacao.status === 'pendente' ? 'selected' : ''}>Pendente</option>
         </select>
+      </div>
+      <div class="form-group">
+        <label>Categoria</label>
+         <div class="categoria-autocomplete">
+           <input type="text" id="modalBuscaCategoriaTransacao" placeholder="Buscar categoria..." autocomplete="off">
+           <input type="hidden" id="modalCategoriaTransacao">
+           <div id="modalDropdownCategoriaTransacao" class="dropdown-categorias"></div>
+         </div>
+      </div>
+      <div class="form-group">
+        <label>Tags</label>
+        <div id="modalTagsContainer" class="tag-editor-container"></div>
+        <div class="tag-editor-input-row">
+          <input type="text" id="modalTagInput" class="tag-editor-input" placeholder="Adicionar tag">
+          <button type="button" id="modalBtnAddTag" class="btn-tag-add">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
       </div>
       ${tipoDespesaField}
     `,
     onSalvar: async () => {
-      const novoTitulo = document.getElementById('modalTituloTransacao')?.value;
-      const novoValor = Number(document.getElementById('modalValorTransacao')?.value);
-      const novoTipo = document.getElementById('modalTipoTransacao')?.value;
-      const novaCategoria = document.getElementById('modalCategoriaTransacao')?.value;
-      const novoTipoDespesa = document.getElementById('modalTipoDespesa')?.value;
+      const novoTitulo = $('modalTituloTransacao')?.value?.trim();
+      const novoValor = Number($('modalValorTransacao')?.value);
+      const novoTipo = $('modalTipoTransacao')?.value;
+      const novoStatus = $('modalStatusTransacao')?.value;
+      const novaCategoria = $('modalCategoriaTransacao')?.value;
+      const novoTipoDespesa = $('modalTipoDespesa')?.value;
 
-      if (!novoTitulo || !novoValor || !novoTipo || !novaCategoria) return;
+      if (!novoTitulo || !novoValor || !novoTipo || !novoStatus || !novaCategoria) return;
 
       const dados = {
         titulo: novoTitulo,
         valor: novoValor,
         tipo: novoTipo,
-        categoria: novaCategoria
+        status: novoStatus,
+        categoria: novaCategoria,
+        tags: tagsModal
       };
 
-      if (novoTipoDespesa) {
-        dados.tipoDespesa = novoTipoDespesa;
+      if (novoTipo === 'saida') {
+        dados.tipoDespesa = novoTipoDespesa || undefined;
       }
 
       await apiFetch(`${window.location.origin}/transacoes/${id}`, {
@@ -257,11 +280,40 @@ window.editarTransacao = async id => {
     }
   });
 
-  const selectTipo = document.getElementById('modalTipoTransacao');
-  const despField = document.getElementById('modalGrupoTipoDespesa');
+  inicializarEditorTags({
+    tags: tagsModal,
+    containerId: 'modalTagsContainer',
+    inputId: 'modalTagInput',
+    addButtonId: 'modalBtnAddTag'
+  });
+
+  setupCategoriaAutocomplete(
+    'modalBuscaCategoriaTransacao',
+    'modalCategoriaTransacao',
+    'modalDropdownCategoriaTransacao',
+    categorias
+  );
+
+  if (transacao.categoria) {
+    const inputBusca = $('modalBuscaCategoriaTransacao');
+    const inputHidden = $('modalCategoriaTransacao');
+    if (inputBusca && inputHidden) {
+      inputBusca.value = transacao.categoria.nome;
+      inputHidden.value = transacao.categoria._id;
+      const cor = transacao.categoria.cor || '';
+      inputBusca.style.boxShadow = cor ? `inset 4px 0 0 ${cor}` : '';
+    }
+  }
+
+  const selectTipo = $('modalTipoTransacao');
+  const despField = $('modalGrupoTipoDespesa');
   if (selectTipo && despField) {
     const toggle = () => {
-      despField.style.display = selectTipo.value === 'saida' ? '' : 'none';
+      if (selectTipo.value === 'saida') {
+        showElement(despField);
+      } else {
+        hideElement(despField);
+      }
     };
     selectTipo.addEventListener('change', toggle);
     toggle();

@@ -4,6 +4,15 @@ export function formatarValor(valor) {
   return num.toFixed(2);
 }
 
+// Soma valores numericos de uma lista usando campo padrao ou funcao de mapeamento
+export function calcularTotalItens(lista = [], valorOuFn = 'valor') {
+  const obterValor = typeof valorOuFn === 'function'
+    ? valorOuFn
+    : item => item?.[valorOuFn];
+
+  return lista.reduce((acc, item) => acc + Number(obterValor(item) || 0), 0);
+}
+
 // Capitaliza primeira letra de um texto
 export function capitalizar(texto = '') {
   if (!texto) return '';

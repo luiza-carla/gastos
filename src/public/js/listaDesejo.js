@@ -2,8 +2,7 @@ import { apiFetch } from './config.js';
 import { limparCategoriaSelecionada } from './categoria.js';
 import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
-import { formatarValor, capitalizar, criarCardsHTML, setDisabledById, $, setHTMLById, escaparHtml } from './helpers/index.js';
-import { criarBadgeCategoria, atualizarTagsVisual, inicializarTags, gerarTags } from './helpers/tagHelpers.js';
+import { formatarValor, capitalizar, criarCardsHTML, calcularTotalItens, $, setHTMLById, setTextById, escaparHtml, criarBadgeCategoria, inicializarTags, gerarTags, inicializarEditorTags, resetarTagsFormulario, setupCategoriaAutocomplete } from './helpers/index.js';
 
 // Array para armazenar tags temporárias do formulário
 let tags = [];
@@ -38,10 +37,7 @@ export async function criarDesejo(formId = 'formListaDesejo') {
     });
 
     // Reseta estado do formulário
-    tags.length = 0;
-    atualizarTagsVisual($('tagsContainer'), tags);
-    setDisabledById('btnNovaTag', false);
-    setDisabledById('tagInput', false);
+    resetarTagsFormulario(tags);
 
     form.reset();
     limparCategoriaSelecionada();
@@ -57,6 +53,9 @@ export async function listarDesejos() {
   if (!container) return;
 
   const desejos = await apiFetch(window.location.origin + '/lista-desejos');
+  const total = calcularTotalItens(desejos);
+
+  setTextById('totalDesejos', `R$ ${formatarValor(total)}`);
   setHTMLById('listaDesejos', criarCardsHTML(desejos, criarCardDesejo));
 }
 
@@ -113,6 +112,8 @@ window.editarDesejo = async id => {
 
   if (!desejo) return;
 
+  let tagsModal = [...(desejo.tags || [])];
+
   abrirModal({
     titulo: 'Editar item da lista de desejos',
     conteudoHTML: `
@@ -126,10 +127,11 @@ window.editarDesejo = async id => {
       </div>
       <div class="form-group">
         <label>Categoria</label>
-        <select id="modalCategoriaDesejo">
-          <option value="">-- Selecione --</option>
-          ${categorias.map(c => `<option value="${c._id}" ${desejo.categoria?._id === c._id ? 'selected' : ''}>${escaparHtml(c.nome)}</option>`).join('')}
-        </select>
+         <div class="categoria-autocomplete">
+           <input type="text" id="modalBuscaCategoriaDesejo" placeholder="Buscar categoria..." autocomplete="off">
+           <input type="hidden" id="modalCategoriaDesejo">
+           <div id="modalDropdownCategoriaDesejo" class="dropdown-categorias"></div>
+         </div>
       </div>
       <div class="form-group">
         <label>Tipo de Despesa</label>
@@ -140,12 +142,22 @@ window.editarDesejo = async id => {
           <option value="opcional" ${desejo.tipoDespesa === 'opcional' ? 'selected' : ''}>Opcional</option>
         </select>
       </div>
+      <div class="form-group">
+        <label>Tags</label>
+        <div id="modalTagsContainerDesejo" class="tag-editor-container"></div>
+        <div class="tag-editor-input-row">
+          <input type="text" id="modalTagInputDesejo" class="tag-editor-input" placeholder="Adicionar tag">
+          <button type="button" id="modalBtnAddTagDesejo" class="btn-tag-add">
+            <i class="fa-solid fa-plus"></i>
+          </button>
+        </div>
+      </div>
     `,
     onSalvar: async () => {
-      const novoTitulo = document.getElementById('modalTituloDesejo')?.value;
-      const novoValor = Number(document.getElementById('modalValorDesejo')?.value);
-      const novaCategoria = document.getElementById('modalCategoriaDesejo')?.value;
-      const novoTipoDespesa = document.getElementById('modalTipoDespesa')?.value;
+      const novoTitulo = $('modalTituloDesejo')?.value?.trim();
+      const novoValor = Number($('modalValorDesejo')?.value);
+      const novaCategoria = $('modalCategoriaDesejo')?.value;
+      const novoTipoDespesa = $('modalTipoDespesa')?.value;
 
       // Valida campos obrigatórios
       if (!novoTitulo || !novoValor || !novaCategoria) {
@@ -156,7 +168,8 @@ window.editarDesejo = async id => {
       const dados = {
         titulo: novoTitulo,
         valor: novoValor,
-        categoria: novaCategoria
+        categoria: novaCategoria,
+        tags: tagsModal
       };
 
       if (novoTipoDespesa) {
@@ -172,6 +185,31 @@ window.editarDesejo = async id => {
       listarDesejos();
     }
   });
+
+  inicializarEditorTags({
+    tags: tagsModal,
+    containerId: 'modalTagsContainerDesejo',
+    inputId: 'modalTagInputDesejo',
+    addButtonId: 'modalBtnAddTagDesejo'
+  });
+
+  setupCategoriaAutocomplete(
+    'modalBuscaCategoriaDesejo',
+    'modalCategoriaDesejo',
+    'modalDropdownCategoriaDesejo',
+    categorias
+  );
+
+  if (desejo.categoria) {
+    const inputBusca = $('modalBuscaCategoriaDesejo');
+    const inputHidden = $('modalCategoriaDesejo');
+    if (inputBusca && inputHidden) {
+      inputBusca.value = desejo.categoria.nome;
+      inputHidden.value = desejo.categoria._id;
+      const cor = desejo.categoria.cor || '';
+      inputBusca.style.boxShadow = cor ? `inset 4px 0 0 ${cor}` : '';
+    }
+  }
 };
 
 // Converte um desejo em transacao real e remove da lista
@@ -211,10 +249,10 @@ window.realizarDesejo = async id => {
       </div>
     `,
     onSalvar: async () => {
-      const conta = document.getElementById('modalContaDesejo')?.value;
-      const valor = Number(document.getElementById('modalValorTransacao')?.value);
-      const status = document.getElementById('modalStatusTransacao')?.value;
-      const data = document.getElementById('modalDataTransacao')?.value;
+      const conta = $('modalContaDesejo')?.value;
+      const valor = Number($('modalValorTransacao')?.value);
+      const status = $('modalStatusTransacao')?.value;
+      const data = $('modalDataTransacao')?.value;
 
       // Valida selecao de conta (obrigatorio para transacao)
       if (!conta) {

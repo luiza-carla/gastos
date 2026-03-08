@@ -1,4 +1,5 @@
 import { setToken, apiFetch } from './config.js';
+import { $ } from './helpers/index.js';
 
 // Referência do formulário e URL da API
 const formLogin = document.getElementById('formLogin');

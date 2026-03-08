@@ -16,12 +16,7 @@ export function atualizarTagsVisual(container, tags) {
     // Cria elemento visual para cada tag
     const tagEl = document.createElement('span');
     tagEl.textContent = tag + ' ✕';
-    tagEl.style.marginRight = '8px';
-    tagEl.style.cursor = 'pointer';
-    tagEl.style.padding = '4px 8px';
-    tagEl.style.background = '#eee';
-    tagEl.style.borderRadius = '6px';
-    tagEl.style.display = 'inline-block';
+    tagEl.className = 'tag-chip-edit';
 
     // Permite remover tag ao clicar no X
     tagEl.onclick = () => {
@@ -91,4 +86,70 @@ export function gerarTags(tagsArray) {
   return tagsArray
     .map(tag => `<span class="tag">${escaparHtml(tag)}</span>`)
     .join('');
+}
+
+// Inicializa editor de tags reutilizavel para modais
+export function inicializarEditorTags({ tags, containerId, inputId, addButtonId, maxTags = 3 }) {
+  const container = $(containerId);
+  const input = $(inputId);
+  const btnAdd = $(addButtonId);
+
+  if (!container || !input || !btnAdd) return;
+
+  const render = () => {
+    clearElement(container);
+
+    tags.forEach((tag, index) => {
+      const tagEl = document.createElement('span');
+      tagEl.textContent = tag + ' ✕';
+      tagEl.className = 'tag-chip-edit';
+
+      tagEl.onclick = () => {
+        tags.splice(index, 1);
+        render();
+      };
+
+      container.appendChild(tagEl);
+    });
+  };
+
+  const adicionarTag = () => {
+    const valor = input.value.trim();
+    if (!valor) return;
+
+    if (tags.length >= maxTags) {
+      alert('Máximo de 3 tags');
+      return;
+    }
+
+    if (tags.includes(valor)) return;
+
+    tags.push(valor);
+    input.value = '';
+    render();
+  };
+
+  btnAdd.addEventListener('click', adicionarTag);
+  input.addEventListener('keypress', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      adicionarTag();
+    }
+  });
+
+  render();
+}
+
+// Reseta estado de tags no formulario principal
+export function resetarTagsFormulario(tags, options = {}) {
+  const {
+    containerId = 'tagsContainer',
+    inputId = 'tagInput',
+    btnNovaId = 'btnNovaTag'
+  } = options;
+
+  tags.length = 0;
+  atualizarTagsVisual($(containerId), tags);
+  setDisabledById(btnNovaId, false);
+  setDisabledById(inputId, false);
 }

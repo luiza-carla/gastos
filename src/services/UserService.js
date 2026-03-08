@@ -4,6 +4,28 @@ const jwt = require('jsonwebtoken');
 
 class UsuarioService {
 
+  // Gera token JWT padrão para autenticação
+  gerarToken(usuarioId) {
+    return jwt.sign(
+      { id: usuarioId },
+      process.env.JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+  }
+
+  // Monta payload de autenticação com token e dados públicos do usuário
+  montarRespostaAutenticacao(usuario, token) {
+    return {
+      token,
+      usuario: {
+        id: usuario._id,
+        nome: usuario.nome,
+        email: usuario.email,
+        salario: usuario.salario
+      }
+    };
+  }
+
   // Registra novo usuário com hash de senha
   async registrar(dados) {
     const { nome, email, senha, salario } = dados;
@@ -11,7 +33,9 @@ class UsuarioService {
     // Valida se email já existe
     const usuarioExistente = await Usuario.findOne({ email });
     if (usuarioExistente) {
-      throw new Error('Email já cadastrado');
+      const erro = new Error('Email já cadastrado');
+      erro.statusCode = 400;
+      throw erro;
     }
 
     // Cria hash da senha
@@ -25,22 +49,8 @@ class UsuarioService {
       salario
     });
 
-    // Gera token JWT para autenticação
-    const token = jwt.sign(
-      { id: novoUsuario._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    return {
-      token,
-      usuario: {
-        id: novoUsuario._id,
-        nome: novoUsuario.nome,
-        email: novoUsuario.email,
-        salario: novoUsuario.salario
-      }
-    };
+    const token = this.gerarToken(novoUsuario._id);
+    return this.montarRespostaAutenticacao(novoUsuario, token);
   }
 
   // Realiza login validando credenciais e retornando token
@@ -50,31 +60,21 @@ class UsuarioService {
     // Busca usuário por email
     const usuario = await Usuario.findOne({ email });
     if (!usuario) {
-      throw new Error('Credenciais inválidas');
+      const erro = new Error('Credenciais inválidas');
+      erro.statusCode = 400;
+      throw erro;
     }
 
     // Valida senha com hash
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
     if (!senhaValida) {
-      throw new Error('Credenciais inválidas');
+      const erro = new Error('Credenciais inválidas');
+      erro.statusCode = 400;
+      throw erro;
     }
 
-    // Gera token JWT
-    const token = jwt.sign(
-      { id: usuario._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '7d' }
-    );
-
-    return {
-      token,
-      usuario: {
-        id: usuario._id,
-        nome: usuario.nome,
-        email: usuario.email,
-        salario: usuario.salario
-      }
-    };
+    const token = this.gerarToken(usuario._id);
+    return this.montarRespostaAutenticacao(usuario, token);
   }
 
   // Lista todos os usuários (sem expor senhas)

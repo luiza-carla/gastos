@@ -1,0 +1,122 @@
+import { removerAcentos, setHTMLById, addClass, removeClass, escaparHtml, $, showElement, hideElement } from './index.js';
+
+// Configura autocomplete de categorias reutilizável para modais
+export function setupCategoriaAutocomplete(inputId, inputHiddenId, dropdownId, categorias, onSelect) {
+  const inputBusca = $(inputId);
+  const inputHidden = $(inputHiddenId);
+  const dropdown = $(dropdownId);
+
+  if (!inputBusca || !inputHidden || !dropdown) {
+    console.warn(`Categoria autocomplete não inicializado: ${inputId}`);
+    return;
+  }
+
+  let categoriaSelecionada = null;
+
+  const aplicarCor = (cor = '') => {
+    if (!cor) {
+      inputBusca.style.boxShadow = '';
+      return;
+    }
+    inputBusca.style.boxShadow = `inset 4px 0 0 ${cor}`;
+  };
+
+  const mostrarDropdown = (categoriasFiltradas) => {
+    if (categoriasFiltradas.length === 0) {
+      setHTMLById(dropdownId, '<div class="categoria-item">Nenhuma categoria encontrada</div>');
+      addClass(dropdown, 'show');
+      showElement(dropdown);
+      return;
+    }
+
+    const html = categoriasFiltradas.map(cat => 
+      `<div class="categoria-item" data-id="${cat._id}" data-nome="${escaparHtml(cat.nome)}" data-cor="${cat.cor}">
+        <span class="categoria-cor" style="background:${cat.cor};"></span>
+        <span class="categoria-nome">${escaparHtml(cat.nome)}</span>
+      </div>`
+    ).join('');
+
+    setHTMLById(dropdownId, html);
+
+    dropdown.querySelectorAll('.categoria-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const id = item.getAttribute('data-id');
+        const nome = item.getAttribute('data-nome');
+        const cor = item.getAttribute('data-cor');
+        if (id && nome) {
+          inputBusca.value = nome;
+          inputHidden.value = id;
+          categoriaSelecionada = { id, nome, cor };
+          aplicarCor(cor);
+          removeClass(dropdown, 'show');
+          hideElement(dropdown);
+          if (onSelect) onSelect(id, nome, cor);
+        }
+      });
+    });
+
+    addClass(dropdown, 'show');
+    showElement(dropdown);
+  };
+
+  const filtrar = (textoBusca) => {
+    const termo = removerAcentos(textoBusca.toLowerCase().trim());
+    const categoriasFiltradas = termo
+      ? categorias.filter(cat => 
+          removerAcentos(cat.nome.toLowerCase()).includes(termo)
+        )
+      : categorias;
+    mostrarDropdown(categoriasFiltradas);
+  };
+
+  // Focus mostra dropdown
+  inputBusca.addEventListener('focus', () => {
+    filtrar(inputBusca.value || '');
+  });
+
+  inputBusca.addEventListener('click', () => {
+    filtrar(inputBusca.value || '');
+  });
+
+  // Input filtra
+  inputBusca.addEventListener('input', (e) => {
+    if (categoriaSelecionada && e.target.value !== categoriaSelecionada.nome) {
+      inputHidden.value = '';
+      categoriaSelecionada = null;
+      aplicarCor();
+    }
+    filtrar(e.target.value);
+  });
+
+  // Fecha ao clicar fora
+  const handler = (e) => {
+    const autocomplete = dropdown.closest('.categoria-autocomplete') || dropdown.parentElement;
+    if (autocomplete && !autocomplete.contains(e.target)) {
+      removeClass(dropdown, 'show');
+      hideElement(dropdown);
+    }
+  };
+  document.addEventListener('click', handler);
+
+  return {
+    selecionarCategoria: (id, nome, cor) => {
+      inputBusca.value = nome;
+      inputHidden.value = id;
+      categoriaSelecionada = { id, nome, cor };
+      aplicarCor(cor);
+      removeClass(dropdown, 'show');
+      hideElement(dropdown);
+    },
+    limpar: () => {
+      inputBusca.value = '';
+      inputHidden.value = '';
+      categoriaSelecionada = null;
+      aplicarCor();
+      removeClass(dropdown, 'show');
+      hideElement(dropdown);
+    },
+    filtrar: (textoBusca = '') => {
+      filtrar(textoBusca);
+    }
+  };
+}
