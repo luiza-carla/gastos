@@ -3,14 +3,14 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f6f8 0%, #eef1f5 100%);
+  background: linear-gradient(135deg, var(--bg) 0%, var(--cinza-4) 100%);
   padding: 20px;
 }
 
 .container {
   width: 100%;
   max-width: 420px;
-  background: white;
+  background: var(--branco);
   padding: 50px 40px;
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(45, 35, 46, 0.12);
@@ -79,7 +79,7 @@ input::placeholder {
 input:focus {
   outline: none;
   border-color: var(--verde);
-  background: white;
+  background: var(--branco);
   box-shadow: 0 0 0 4px rgba(132, 176, 130, 0.1);
 }
 
@@ -91,7 +91,7 @@ button {
   width: 100%;
   padding: 14px 16px;
   background: linear-gradient(135deg, var(--verde) 0%, var(--verde-azul) 100%);
-  color: white;
+  color: var(--branco);
   border: none;
   border-radius: 12px;
   font-size: 16px;

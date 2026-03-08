@@ -20,7 +20,7 @@
   top: 100%;
   left: 0;
   right: 0;
-  background: white;
+  background: var(--branco);
   border: 1px solid var(--cinza-borda);
   border-radius: 8px;
   max-height: 200px;
@@ -67,7 +67,7 @@
 
 .categoria-item.selected {
   background: var(--verde);
-  color: white;
+  color: var(--branco);
 }
 
 #tagsArea {
@@ -83,7 +83,7 @@
 
 .tag {
   background: var(--verde);
-  color: white;
+  color: var(--branco);
   padding: 5px 10px;
   border-radius: 20px;
   font-size: 12px;
@@ -128,7 +128,7 @@
   padding: 8px 12px;
   border-radius: 6px;
   background: var(--verde);
-  color: white;
+  color: var(--branco);
   border: none;
   cursor: pointer;
   font-weight: 500;
@@ -156,13 +156,29 @@
 }
 
 .transacao-card {
-  background: white;
+  background: var(--branco);
   border-radius: 12px;
   padding: 18px;
   margin-bottom: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border-left: 4px solid var(--cor-categoria, var(--cinza-claro));
   transition: all 0.3s ease;
+}
+
+.transacao-card.transacao-entrada {
+  background: linear-gradient(
+    180deg,
+    rgba(132, 176, 130, 0.12) 0%,
+    var(--branco) 30%
+  );
+}
+
+.transacao-card.transacao-saida {
+  background: linear-gradient(
+    180deg,
+    rgba(217, 83, 79, 0.12) 0%,
+    var(--branco) 30%
+  );
 }
 
 .transacao-card:hover {
@@ -232,6 +248,41 @@
   font-weight: 500;
 }
 
+.info-valor.info-valor-tipo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tipo-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+.tipo-chip-entrada {
+  color: var(--verde-escuro);
+  background: rgba(132, 176, 130, 0.2);
+  border-color: rgba(132, 176, 130, 0.45);
+}
+
+.tipo-chip-saida {
+  color: var(--vermelho-vinho);
+  background: rgba(217, 83, 79, 0.18);
+  border-color: rgba(217, 83, 79, 0.42);
+}
+
+.tipo-chip-despesa {
+  color: var(--cinza-texto);
+  background: var(--cinza-chip-bg);
+  border-color: var(--cinza-chip-borda);
+}
+
 .categoria-badge {
   display: inline-flex;
   align-items: center;
@@ -240,7 +291,7 @@
   border-radius: 999px;
   font-weight: 600;
   font-size: 12px;
-  background: white;
+  background: var(--branco);
   color: var(--cinza-texto);
   border: 1px solid var(--categoria-cor);
 }
@@ -285,7 +336,7 @@
 
 .btn-editar {
   background: var(--verde-azul);
-  color: white;
+  color: var(--branco);
 }
 
 .btn-editar:hover {
@@ -295,7 +346,7 @@
 
 .btn-deletar {
   background: var(--vermelho);
-  color: white;
+  color: var(--branco);
 }
 
 .btn-deletar:hover {
@@ -304,14 +355,19 @@
 }
 
 #transacoes {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  column-count: 2;
+  column-gap: 16px;
   margin-top: 15px;
+}
+
+#transacoes .transacao-card {
+  display: inline-block;
+  width: 100%;
+  break-inside: avoid;
 }
 
 @media (max-width: 1200px) {
   #transacoes {
-    grid-template-columns: 1fr;
+    column-count: 1;
   }
 }

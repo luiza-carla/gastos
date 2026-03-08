@@ -6,7 +6,7 @@
   height: 100vh;
   width: 230px;
 
-  background: #2d232e;
+  background: var(--cinza-1);
 
   padding: 30px 20px;
 
@@ -17,7 +17,7 @@
 }
 
 .sidebar h2 {
-  color: #f7c1bb;
+  color: var(--rosa);
 
   font-size: 22px;
   margin-bottom: 30px;
@@ -50,14 +50,14 @@
 }
 
 .sidebar a:hover {
-  background: #474448;
-  color: white;
+  background: var(--cinza-2);
+  color: var(--branco);
   transform: translateX(3px);
 }
 
 .sidebar a.active {
-  background: #84b082;
-  color: white;
+  background: var(--verde);
+  color: var(--branco);
 }
 
 .sidebar-bottom {
@@ -65,9 +65,9 @@
 }
 
 #btnLogout {
-  color: #f7c1bb;
+  color: var(--rosa);
 }
 
 #btnLogout:hover {
-  background: #534b52;
+  background: var(--cinza-3);
 }

@@ -9,7 +9,7 @@
 }
 
 .modal-box {
-  background: white;
+  background: var(--branco);
   padding: 25px;
   border-radius: 10px;
   width: 400px;
@@ -53,7 +53,7 @@
 
 .btn-danger {
   background: var(--vermelho-escuro);
-  color: white;
+  color: var(--branco);
 }
 
 .btn-danger:hover {

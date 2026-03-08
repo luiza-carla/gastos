@@ -153,7 +153,14 @@ function criarCardTransacao(t) {
           
           <div class="info-linha">
             <span class="info-label">Tipo:</span>
-            <span class="info-valor">${tipoCapitalizado}${tipoDespesaCapitalizado ? ' • ' + tipoDespesaCapitalizado : ''}</span>
+            <span class="info-valor info-valor-tipo">
+              <span class="tipo-chip tipo-chip-${t.tipo}">${tipoCapitalizado}</span>
+              ${
+                tipoDespesaCapitalizado
+                  ? `<span class="tipo-chip tipo-chip-despesa">${tipoDespesaCapitalizado}</span>`
+                  : ''
+              }
+            </span>
           </div>
 
           <div class="info-linha">
@@ -171,10 +178,14 @@ function criarCardTransacao(t) {
             <span class="info-valor">${statusCapitalizado}</span>
           </div>
 
-          <div class="info-linha">
+          ${
+            temRecorrencia
+              ? `<div class="info-linha">
             <span class="info-label">Recorrência:</span>
-            <span class="info-valor">${recorrenciaCapitalizada || 'Nenhuma'}</span>
-          </div>
+            <span class="info-valor">${recorrenciaCapitalizada}</span>
+          </div>`
+              : ''
+          }
 
           ${
             temRecorrencia

@@ -15,6 +15,7 @@ export function calcularTotalItens(lista = [], valorOuFn = 'valor') {
 // Capitaliza primeira letra de um texto
 export function capitalizar(texto = '') {
   if (!texto) return '';
+  if (texto.toLowerCase() === 'saida') return 'Saída';
   return texto.charAt(0).toUpperCase() + texto.slice(1);
 }
 
