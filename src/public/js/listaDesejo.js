@@ -141,25 +141,25 @@ window.editarDesejo = async (id) => {
     titulo: 'Editar item da lista de desejos',
     conteudoHTML: `
       <div class="form-group">
-        <label>Titulo</label>
-        <input type="text" id="modalTituloDesejo" value="${escaparHtml(desejo.titulo)}">
+        <label>Título</label>
+        <input type="text" id="modalTituloDesejo" value="${escaparHtml(desejo.titulo)}" required>
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="number" id="modalValorDesejo" value="${desejo.valor}" step="0.01">
+        <input type="number" id="modalValorDesejo" value="${desejo.valor}" step="0.01" required>
       </div>
       <div class="form-group">
         <label>Categoria</label>
          <div class="categoria-autocomplete">
-           <input type="text" id="modalBuscaCategoriaDesejo" placeholder="Buscar categoria..." autocomplete="off">
-           <input type="hidden" id="modalCategoriaDesejo">
+           <input type="text" id="modalBuscaCategoriaDesejo" placeholder="Buscar categoria..." autocomplete="off" required>
+           <input type="hidden" id="modalCategoriaDesejo" required>
            <div id="modalDropdownCategoriaDesejo" class="dropdown-categorias"></div>
          </div>
       </div>
       <div class="form-group">
         <label>Tipo de Despesa</label>
         <select id="modalTipoDespesa">
-          <option value="">-- Opcional --</option>
+          <option value="">Selecione o tipo de despesa</option>
           <option value="essencial" ${desejo.tipoDespesa === 'essencial' ? 'selected' : ''}>Essencial</option>
           <option value="eventual" ${desejo.tipoDespesa === 'eventual' ? 'selected' : ''}>Eventual</option>
           <option value="opcional" ${desejo.tipoDespesa === 'opcional' ? 'selected' : ''}>Opcional</option>
@@ -253,7 +253,7 @@ window.realizarDesejo = async (id) => {
       <div class="form-group">
         <label>Conta</label>
         <select id="modalContaDesejo" required>
-          <option value="">-- Selecione uma conta --</option>
+          <option value="" selected disabled>Selecione a conta</option>
           ${contas.map((c) => `<option value="${c._id}">${escaparHtml(c.nome)}</option>`).join('')}
         </select>
       </div>
@@ -264,6 +264,7 @@ window.realizarDesejo = async (id) => {
       <div class="form-group">
         <label>Status do pagamento</label>
         <select id="modalStatusTransacao">
+          <option value="" selected disabled>Selecione o status</option>
           <option value="pago">Pago</option>
           <option value="pendente">Pendente</option>
         </select>
@@ -282,6 +283,11 @@ window.realizarDesejo = async (id) => {
       // Valida selecao de conta (obrigatorio para transacao)
       if (!conta) {
         alert('Por favor, selecione uma conta');
+        return;
+      }
+
+      if (!status) {
+        alert('Por favor, selecione um status');
         return;
       }
 

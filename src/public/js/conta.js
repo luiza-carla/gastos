@@ -78,21 +78,23 @@ export async function criarConta(formId, callback) {
 
 // Abre modal para editar conta existente
 window.editarConta = async (id) => {
+  const conta = (await apiFetch('/contas')).find((c) => c._id === id);
+  if (!conta) return;
+
   abrirModal({
     titulo: 'Editar conta',
     conteudoHTML: `
       <div class="form-group">
         <label>Nome</label>
-        <input type="text" id="modalNomeConta" placeholder="Digite o nome da conta">
+        <input type="text" id="modalNomeConta" value="${conta.nome}" required>
       </div>
       <div class="form-group">
         <label>Tipo</label>
-        <select id="modalTipoConta">
-          <option value="">-- Selecione --</option>
-          <option value="corrente">Corrente</option>
-          <option value="credito">Crédito</option>
-          <option value="dinheiro">Dinheiro</option>
-          <option value="investimento">Investimento</option>
+        <select id="modalTipoConta" required>
+          <option value="corrente" ${conta.tipo === 'corrente' ? 'selected' : ''}>Corrente</option>
+          <option value="credito" ${conta.tipo === 'credito' ? 'selected' : ''}>Crédito</option>
+          <option value="dinheiro" ${conta.tipo === 'dinheiro' ? 'selected' : ''}>Dinheiro</option>
+          <option value="investimento" ${conta.tipo === 'investimento' ? 'selected' : ''}>Investimento</option>
         </select>
       </div>
     `,
@@ -144,6 +146,13 @@ export async function popularSelectContas(selectId = 'conta') {
   const contas = await listarContas();
 
   clearElement(select);
+
+  const placeholderTexto = 'Selecione a conta';
+
+  const placeholderAttrs =
+    selectId === 'contaSalario' ? 'selected' : 'selected disabled';
+
+  select.innerHTML = `<option value="" ${placeholderAttrs}>${placeholderTexto}</option>`;
 
   contas.forEach((c) => {
     select.innerHTML += criarOpcao(c._id, `${c.nome} (${capitalizar(c.tipo)})`);

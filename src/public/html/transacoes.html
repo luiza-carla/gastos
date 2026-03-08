@@ -39,7 +39,8 @@
 
               <div class="form-group">
                 <label>Tipo</label>
-                <select id="tipo">
+                <select id="tipo" required>
+                  <option value="" selected disabled>Selecione o tipo</option>
                   <option value="entrada">Entrada</option>
                   <option value="saida">Saída</option>
                 </select>
@@ -53,7 +54,7 @@
             >
               <label for="tipoDespesa">Tipo de saída</label>
               <select id="tipoDespesa">
-                <option value="">-- selecione --</option>
+                <option value="">Selecione o tipo de saída</option>
                 <option value="essencial">Essencial</option>
                 <option value="eventual">Eventual</option>
                 <option value="opcional">Opcional</option>
@@ -67,7 +68,9 @@
             <div class="form-grid">
               <div class="form-group">
                 <label>Conta</label>
-                <select id="conta"></select>
+                <select id="conta" required>
+                  <option value="" selected disabled>Selecione a conta</option>
+                </select>
               </div>
 
               <div class="form-group">
@@ -78,8 +81,9 @@
                     id="buscaCategoria"
                     placeholder="Buscar ou selecionar categoria..."
                     autocomplete="off"
+                    required
                   />
-                  <input type="hidden" id="categoria" />
+                  <input type="hidden" id="categoria" required />
                   <div
                     id="dropdownCategorias"
                     class="dropdown-categorias"
@@ -111,7 +115,8 @@
             <div class="form-grid">
               <div class="form-group">
                 <label>Status</label>
-                <select id="status">
+                <select id="status" required>
+                  <option value="" selected disabled>Selecione o status</option>
                   <option value="pago">Pago</option>
                   <option value="pendente">Pendente</option>
                 </select>
@@ -119,7 +124,8 @@
 
               <div class="form-group">
                 <label>Recorrência</label>
-                <select id="recorrencia">
+                <select id="recorrencia" required>
+                  <option value="" selected disabled>Selecione a recorrência</option>
                   <option value="nenhuma">Nenhuma</option>
                   <option value="mensal">Mensal</option>
                 </select>

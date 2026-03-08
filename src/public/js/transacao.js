@@ -85,6 +85,9 @@ export async function criarTransacao(formId = 'formTransacao') {
     resetarTagsFormulario(tags);
 
     form.reset();
+    hideById('tipoDespesaContainer');
+    tipoDespesaSelect.value = '';
+    hideElement(parcelasContainer);
     limparCategoriaSelecionada();
 
     listarTransacoes();
@@ -234,7 +237,7 @@ window.editarTransacao = async (id) => {
     <div class="form-group" id="modalGrupoTipoDespesa" style="display: ${transacao.tipo === 'saida' ? '' : 'none'};">
       <label>Tipo de Despesa</label>
       <select id="modalTipoDespesa">
-        <option value="">-- Selecione --</option>
+        <option value="">Selecione o tipo de despesa</option>
         <option value="essencial" ${transacao.tipoDespesa === 'essencial' ? 'selected' : ''}>Essencial</option>
         <option value="eventual" ${transacao.tipoDespesa === 'eventual' ? 'selected' : ''}>Eventual</option>
         <option value="opcional" ${transacao.tipoDespesa === 'opcional' ? 'selected' : ''}>Opcional</option>
@@ -247,22 +250,22 @@ window.editarTransacao = async (id) => {
     conteudoHTML: `
       <div class="form-group">
         <label>Título</label>
-        <input type="text" id="modalTituloTransacao" value="${escaparHtml(transacao.titulo)}">
+        <input type="text" id="modalTituloTransacao" value="${escaparHtml(transacao.titulo)}" required>
       </div>
       <div class="form-group">
         <label>Valor</label>
-        <input type="number" id="modalValorTransacao" value="${transacao.valor}" step="0.01">
+        <input type="number" id="modalValorTransacao" value="${transacao.valor}" step="0.01" required>
       </div>
       <div class="form-group">
         <label>Tipo</label>
-        <select id="modalTipoTransacao">
+        <select id="modalTipoTransacao" required>
           <option value="entrada" ${transacao.tipo === 'entrada' ? 'selected' : ''}>Entrada</option>
           <option value="saida" ${transacao.tipo === 'saida' ? 'selected' : ''}>Saída</option>
         </select>
       </div>
       <div class="form-group">
         <label>Status</label>
-        <select id="modalStatusTransacao">
+        <select id="modalStatusTransacao" required>
           <option value="pago" ${transacao.status === 'pago' ? 'selected' : ''}>Pago</option>
           <option value="pendente" ${transacao.status === 'pendente' ? 'selected' : ''}>Pendente</option>
         </select>
@@ -270,8 +273,8 @@ window.editarTransacao = async (id) => {
       <div class="form-group">
         <label>Categoria</label>
          <div class="categoria-autocomplete">
-           <input type="text" id="modalBuscaCategoriaTransacao" placeholder="Buscar categoria..." autocomplete="off">
-           <input type="hidden" id="modalCategoriaTransacao">
+           <input type="text" id="modalBuscaCategoriaTransacao" placeholder="Buscar categoria..." autocomplete="off" required>
+           <input type="hidden" id="modalCategoriaTransacao" required>
            <div id="modalDropdownCategoriaTransacao" class="dropdown-categorias"></div>
          </div>
       </div>

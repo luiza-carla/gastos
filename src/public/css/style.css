@@ -202,6 +202,14 @@ button:hover {
   color: var(--cinza-3);
 }
 
+.form-group label:has(+ input[required])::after,
+.form-group label:has(+ select[required])::after,
+.form-group label:has(+ .categoria-autocomplete input[required])::after {
+  content: ' *';
+  color: var(--vermelho);
+  font-weight: 700;
+}
+
 input,
 select {
   width: 100%;
@@ -209,7 +217,24 @@ select {
   border-radius: 8px;
   border: 1px solid var(--cinza-borda);
   font-size: 14px;
+  color: var(--cinza-1);
   transition: 0.2s;
+}
+
+select:required:invalid {
+  color: var(--cinza-texto-claro);
+}
+
+select:has(option[value='']:checked) {
+  color: var(--cinza-texto-claro);
+}
+
+select option {
+  color: var(--cinza-1);
+}
+
+select option[value=''] {
+  color: var(--cinza-texto-claro);
 }
 
 input:focus,

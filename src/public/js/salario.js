@@ -4,7 +4,6 @@ import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
   formatarValor,
   criarCardsHTML,
-  capitalizar,
   $,
   clearElement,
   setHTMLById,
@@ -18,18 +17,19 @@ const salarioBaseUrl = window.location.origin + '/salarios';
 // Popula select com dias possiveis de recebimento
 function popularSelectDiasRecebimento(
   selectId = 'diaRecebimento',
-  diaPadrao = 5
+  diaPadrao = null
 ) {
   const select = $(selectId);
   if (!select) return;
 
-  select.innerHTML = '<option value="">-- Selecione o dia --</option>';
+  select.innerHTML =
+    '<option value="" selected disabled>Selecione o dia</option>';
 
   for (let dia = 1; dia <= 31; dia++) {
     const option = document.createElement('option');
     option.value = String(dia);
     option.textContent = `Dia ${dia}`;
-    if (dia === diaPadrao) {
+    if (diaPadrao && dia === diaPadrao) {
       option.selected = true;
     }
     select.appendChild(option);
@@ -72,11 +72,6 @@ export function criarSalario(formId = 'formSalario', callback) {
     });
 
     form.reset();
-
-    const selectDiaRecebimento = $('diaRecebimento');
-    if (selectDiaRecebimento) {
-      selectDiaRecebimento.value = '5';
-    }
 
     await listarSalarios();
     await atualizarVisoesRelacionadas();
@@ -153,11 +148,11 @@ window.editarSalario = (id, valor, diaRecebimento) => {
     conteudoHTML: `
       <div class="form-group">
         <label>Valor</label>
-        <input type="number" id="modalValorSalario" value="${valor}">
+        <input type="number" id="modalValorSalario" value="${valor}" required>
       </div>
       <div class="form-group">
         <label>Dia do recebimento</label>
-        <select id="modalDiaRecebimento">
+        <select id="modalDiaRecebimento" required>
           ${[...Array(31)]
             .map((_, i) => {
               const dia = i + 1;
