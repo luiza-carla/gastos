@@ -13,12 +13,12 @@
   --verde: #84b082;
   --verde-forte: #27ae60;
 
-  --cinza-1: #2d232e;
-  --cinza-2: #474448;
-  --cinza-3: #534b52;
-  --cinza-4: #eef1f5;
+  --cinza-1: #343033;
+  --cinza-2: #4a4549;
+  --cinza-3: #5a5358;
+  --cinza-4: #f2f3f6;
 
-  --bg: #f5f6f8;
+  --bg: #fdf1ef;
 
   --vermelho: #d9534f;
   --vermelho-escuro: #dc3545;
@@ -131,8 +131,8 @@ hr {
 button {
   border: none;
   padding: 12px 18px;
-  background: var(--cinza-2);
-  color: var(--branco);
+  background: var(--rosa);
+  color: var(--cinza-1);
   border-radius: 10px;
   font-weight: 600;
   font-size: 14px;
@@ -141,7 +141,7 @@ button {
 }
 
 button:hover {
-  background: var(--cinza-3);
+  background: var(--rosa-claro);
   transform: translateY(-1px);
 }
 
@@ -198,6 +198,16 @@ button:hover {
   margin-bottom: 25px;
   border-radius: 14px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+}
+
+.card-atalho-adicionar {
+  background: var(--bg);
+  border: 1px solid var(--rosa);
+}
+
+.card-formulario {
+  background: var(--bg);
+  border: 1px solid var(--rosa);
 }
 
 .card h3 {
@@ -257,7 +267,7 @@ select option[value=''] {
 input:focus,
 select:focus {
   outline: none;
-  border-color: var(--verde);
+  border-color: var(--rosa);
 }
 
 @keyframes fadeIn {

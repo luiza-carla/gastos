@@ -8,7 +8,7 @@ class ContaService {
 
   // Lista todas as contas do usuário
   async listar(usuarioId) {
-    return Conta.find({ usuario: usuarioId });
+    return Conta.find({ usuario: usuarioId }).sort({ createdAt: -1 });
   }
 
   // Busca conta por ID

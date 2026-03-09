@@ -72,12 +72,12 @@
 }
 
 .btn-editar {
-  background: var(--verde-azul);
-  color: var(--branco);
+  background: var(--rosa);
+  color: var(--cinza-1);
 }
 
 .btn-editar:hover {
-  background: var(--verde);
+  background: var(--rosa-claro);
   transform: scale(1.05);
 }
 
@@ -143,12 +143,12 @@
 }
 
 .btn-adicionar {
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--rosa);
+  color: var(--cinza-1);
 }
 
 .btn-adicionar:hover {
-  background: var(--verde-forte);
+  background: var(--rosa-claro);
   transform: scale(1.05);
 }
 

@@ -66,8 +66,8 @@
 }
 
 .categoria-item.selected {
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--rosa);
+  color: var(--cinza-1);
 }
 
 #tagsArea {
@@ -82,8 +82,8 @@
 }
 
 .tag {
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--rosa);
+  color: var(--cinza-1);
   padding: 5px 10px;
   border-radius: 20px;
   font-size: 12px;
@@ -127,8 +127,8 @@
 .btn-tag-add {
   padding: 8px 12px;
   border-radius: 6px;
-  background: var(--verde);
-  color: var(--branco);
+  background: var(--rosa);
+  color: var(--cinza-1);
   border: none;
   cursor: pointer;
   font-weight: 500;
@@ -335,12 +335,12 @@
 }
 
 .btn-editar {
-  background: var(--verde-azul);
-  color: var(--branco);
+  background: var(--rosa);
+  color: var(--cinza-1);
 }
 
 .btn-editar:hover {
-  background: var(--verde);
+  background: var(--rosa-claro);
   transform: scale(1.05);
 }
 

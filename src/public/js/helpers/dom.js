@@ -51,6 +51,11 @@ export function $(id) {
   return document.getElementById(id);
 }
 
+// Obtém o nome da página atual a partir da URL
+export function getPaginaAtual(fallback = '') {
+  return window.location.pathname.split('/').pop() || fallback;
+}
+
 // Mostra elemento por ID
 export function showById(id) {
   const el = $(id);

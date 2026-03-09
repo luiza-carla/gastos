@@ -1,6 +1,6 @@
 import { logout } from './logout.js';
 import { abrirModalConfirmacao, fecharModal } from './modalDeletar.js';
-import { $, setHTMLById } from './helpers/index.js';
+import { $, addClass, getPaginaAtual, setHTMLById } from './helpers/index.js';
 
 // Adiciona menu de navegação ao topo da página
 export async function adicionarMenu() {
@@ -16,6 +16,18 @@ export async function adicionarMenu() {
   const res = await fetch('/html/menu.html');
   const html = await res.text();
   setHTMLById('menu', html);
+
+  // Destaca o item ativo conforme a página atual.
+  const paginaAtual = getPaginaAtual('inicio.html');
+  const links = menuDiv.querySelectorAll('.sidebar a[href]');
+  links.forEach((link) => {
+    const href = link.getAttribute('href');
+    if (!href || href === '#') return;
+
+    if (href === paginaAtual) {
+      addClass(link, 'active');
+    }
+  });
 
   // Registra acao de logout com confirmacao
   const btnLogout = menuDiv.querySelector('#btnLogout');

@@ -15,6 +15,7 @@ import {
 } from './notification.js';
 import {
   formatarValor,
+  formatarData,
   capitalizar,
   criarCardsHTML,
   criarBotoesAcao,
@@ -220,6 +221,7 @@ function criarCardTransacao(t) {
   const corCategoria = t.categoria?.cor || '#95a5a6';
 
   const tags = gerarTags(t.tags);
+  const dataCriacao = formatarData(t.createdAt || t.data);
 
   const parcelaAtual = t.parcelamento?.parcelaAtual || 1;
   const totalParcelas = t.parcelamento?.totalParcelas || 1;
@@ -264,6 +266,11 @@ function criarCardTransacao(t) {
           <div class="info-linha">
             <span class="info-label">Status:</span>
             <span class="info-valor">${statusCapitalizado}</span>
+          </div>
+
+          <div class="info-linha">
+            <span class="info-label">Criada em:</span>
+            <span class="info-valor">${dataCriacao}</span>
           </div>
 
           ${

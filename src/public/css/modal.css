@@ -51,6 +51,24 @@
   margin-right: 6px;
 }
 
+#modalCancelar {
+  background: var(--vermelho-escuro);
+  color: var(--branco);
+}
+
+#modalCancelar:hover {
+  background: var(--vermelho-hover);
+}
+
+#modalSalvar {
+  background: var(--verde);
+  color: var(--branco);
+}
+
+#modalSalvar:hover {
+  background: var(--verde-forte);
+}
+
 .btn-danger {
   background: var(--vermelho-escuro);
   color: var(--branco);
@@ -58,6 +76,15 @@
 
 .btn-danger:hover {
   background: var(--vermelho-hover);
+}
+
+#modalConfirmar {
+  background: var(--verde);
+  color: var(--branco);
+}
+
+#modalConfirmar:hover {
+  background: var(--verde-forte);
 }
 
 #modalFooterErro .btn-danger {

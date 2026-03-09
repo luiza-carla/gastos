@@ -44,3 +44,13 @@ export function formatarItemComTipo(
   const tipo = item[tipoProp] || '';
   return `${escaparHtml(nome)} (${capitalizar(tipo)})`;
 }
+
+// Formata data para exibicao curta (dd/mm/aaaa)
+export function formatarData(data) {
+  if (!data) return '-';
+
+  const dataObj = new Date(data);
+  if (Number.isNaN(dataObj.getTime())) return '-';
+
+  return dataObj.toLocaleDateString('pt-BR');
+}

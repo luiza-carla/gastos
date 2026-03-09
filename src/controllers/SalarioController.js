@@ -97,6 +97,7 @@ class SalarioController {
       usuario: req.user.id,
       categoria: categoriaSalario._id,
     })
+      .sort({ data: -1, createdAt: -1 })
       .populate('conta', 'nome tipo')
       .populate('categoria', 'nome');
 

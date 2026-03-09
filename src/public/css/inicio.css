@@ -1,10 +1,10 @@
 #btnProjecao {
   margin-top: 15px;
-  background: #84b082;
+    background: var(--rosa);
 }
 
 #btnProjecao:hover {
-  background: #6f9c95;
+    background: var(--rosa-claro);
 }
 
 #modalProjecao .modal-content p {
@@ -29,7 +29,19 @@
 }
 
 #projSaldoFinal {
-  color: #84b082;
+  color: var(--cinza-1);
   font-weight: 700;
   font-size: 20px;
+}
+
+#projSaldoFinal.saldo-projetado-negativo {
+  color: var(--vermelho);
+}
+
+#projSaldoFinal.saldo-projetado-zero {
+  color: var(--cinza-1);
+}
+
+#projSaldoFinal.saldo-projetado-positivo {
+  color: var(--verde);
 }

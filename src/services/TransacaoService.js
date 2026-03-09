@@ -12,6 +12,7 @@ class TransacaoService {
   // Lista todas as transações do usuário com dados relacionados
   async listar(usuarioId) {
     return Transacao.find({ usuario: usuarioId })
+      .sort({ data: -1, createdAt: -1 })
       .populate('conta', 'nome tipo')
       .populate('categoria', 'nome tipo cor')
       .select('-__v');

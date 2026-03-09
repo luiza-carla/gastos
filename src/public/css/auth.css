@@ -44,14 +44,14 @@ h2 {
 }
 
 .container > p a {
-  color: var(--verde);
+  color: var(--rosa);
   text-decoration: none;
   font-weight: 600;
   transition: color 0.3s ease;
 }
 
 .container > p a:hover {
-  color: var(--verde-azul);
+  color: var(--rosa-claro);
 }
 
 form {
