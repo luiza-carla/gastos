@@ -36,6 +36,9 @@ app.use('/resumo', resumoRoutes);
 const listaDesejoRoutes = require('./routes/listaDesejo.routes');
 app.use('/lista-desejos', listaDesejoRoutes);
 
+const carteiraRoutes = require('./routes/carteira.routes');
+app.use('/carteira', carteiraRoutes);
+
 // Middleware global de tratamento de erros (deve ficar por último)
 app.use(errorHandler);
 

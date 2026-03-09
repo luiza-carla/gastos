@@ -1,5 +1,61 @@
 const Transacao = require('../models/Transacao');
 const Conta = require('../models/Conta');
+const CarteiraService = require('../services/CarteiraService');
+
+function criarErro(statusCode, mensagem) {
+  const erro = new Error(mensagem);
+  erro.statusCode = statusCode;
+  return erro;
+}
+
+async function buscarContaDoUsuario(contaId, usuarioId) {
+  if (!contaId) {
+    throw criarErro(400, 'Conta é obrigatória para transações em conta');
+  }
+
+  const contaObj = await Conta.findOne({
+    _id: contaId,
+    usuario: usuarioId,
+  });
+
+  if (!contaObj) {
+    throw criarErro(404, 'Conta não encontrada');
+  }
+
+  return contaObj;
+}
+
+async function ajustarSaldoConta(contaId, usuarioId, delta) {
+  const contaObj = await buscarContaDoUsuario(contaId, usuarioId);
+  contaObj.saldo += delta;
+  await contaObj.save();
+}
+
+async function aplicarMovimento(transacao, usuarioId) {
+  const valor = Number(transacao.valor || 0);
+  const multiplicador = transacao.tipo === 'entrada' ? 1 : -1;
+  const delta = multiplicador * valor;
+
+  if (transacao.fonteSaldo === 'carteira') {
+    await CarteiraService.adicionarSaldo(usuarioId, delta);
+    return;
+  }
+
+  await ajustarSaldoConta(transacao.conta, usuarioId, delta);
+}
+
+async function reverterMovimento(transacao, usuarioId) {
+  const valor = Number(transacao.valor || 0);
+  const multiplicador = transacao.tipo === 'entrada' ? -1 : 1;
+  const delta = multiplicador * valor;
+
+  if (transacao.fonteSaldo === 'carteira') {
+    await CarteiraService.adicionarSaldo(usuarioId, delta);
+    return;
+  }
+
+  await ajustarSaldoConta(transacao.conta, usuarioId, delta);
+}
 
 class TransacaoController {
   // Cria nova transação e atualiza saldo da conta
@@ -19,16 +75,35 @@ class TransacaoController {
       tipoDespesa,
     } = req.body;
 
+    const fonteSaldo = conta === 'carteira' ? 'carteira' : 'conta';
+    const statusFinal = status || 'pago';
+
+    if (fonteSaldo === 'conta' && !conta) {
+      throw criarErro(400, 'Conta é obrigatória');
+    }
+
+    if (
+      fonteSaldo === 'carteira' &&
+      statusFinal === 'pago' &&
+      tipo === 'saida'
+    ) {
+      const carteira = await CarteiraService.obterOuCriar(req.user.id);
+      if (Number(valor) > carteira.saldo) {
+        throw criarErro(400, 'Saldo insuficiente na carteira');
+      }
+    }
+
     // Cria nova transação no banco
     const novaTransacao = await Transacao.create({
       usuario: req.user.id,
-      conta,
+      conta: fonteSaldo === 'carteira' ? undefined : conta,
+      fonteSaldo,
       titulo,
       valor,
       tipo,
       categoria,
       data: data || Date.now(),
-      status: status || 'pago',
+      status: statusFinal,
       recorrencia: recorrencia || 'nenhuma',
       parcelamento: {
         totalParcelas: parcelamento?.totalParcelas || 1,
@@ -39,16 +114,8 @@ class TransacaoController {
     });
 
     // Atualiza saldo da conta se transação foi marcada como paga
-    if (status === 'pago' || !status) {
-      const contaObj = await Conta.findById(conta);
-      if (contaObj) {
-        if (tipo === 'entrada') {
-          contaObj.saldo += valor;
-        } else if (tipo === 'saida') {
-          contaObj.saldo -= valor;
-        }
-        await contaObj.save();
-      }
+    if (statusFinal === 'pago') {
+      await aplicarMovimento(novaTransacao, req.user.id);
     }
 
     // Recupera transação completa com relações populadas
@@ -96,6 +163,13 @@ class TransacaoController {
     }
 
     const updateData = { ...req.body };
+    if (updateData.conta === 'carteira') {
+      updateData.fonteSaldo = 'carteira';
+      updateData.conta = undefined;
+    } else if (Object.prototype.hasOwnProperty.call(updateData, 'conta')) {
+      updateData.fonteSaldo = 'conta';
+    }
+
     // Remove tipoDespesa se tipo não for saída
     if (updateData.tipo !== 'saida') {
       delete updateData.tipoDespesa;
@@ -103,15 +177,7 @@ class TransacaoController {
 
     // Reverte saldo anterior se transação estava paga
     if (transacaoAntiga.status === 'pago') {
-      const contaObj = await Conta.findById(transacaoAntiga.conta);
-      if (contaObj) {
-        if (transacaoAntiga.tipo === 'entrada') {
-          contaObj.saldo -= transacaoAntiga.valor;
-        } else if (transacaoAntiga.tipo === 'saida') {
-          contaObj.saldo += transacaoAntiga.valor;
-        }
-        await contaObj.save();
-      }
+      await reverterMovimento(transacaoAntiga, req.user.id);
     }
 
     // Atualiza transação no banco
@@ -124,15 +190,7 @@ class TransacaoController {
       .populate('categoria', 'nome cor tipo');
 
     if (transacao.status === 'pago') {
-      const contaObj = await Conta.findById(transacao.conta);
-      if (contaObj) {
-        if (transacao.tipo === 'entrada') {
-          contaObj.saldo += transacao.valor;
-        } else if (transacao.tipo === 'saida') {
-          contaObj.saldo -= transacao.valor;
-        }
-        await contaObj.save();
-      }
+      await aplicarMovimento(transacao, req.user.id);
     }
 
     res.json(transacao);
@@ -152,15 +210,7 @@ class TransacaoController {
 
     // Reverte saldo da conta se transação estava paga
     if (transacao.status === 'pago') {
-      const contaObj = await Conta.findById(transacao.conta);
-      if (contaObj) {
-        if (transacao.tipo === 'entrada') {
-          contaObj.saldo -= transacao.valor;
-        } else if (transacao.tipo === 'saida') {
-          contaObj.saldo += transacao.valor;
-        }
-        await contaObj.save();
-      }
+      await reverterMovimento(transacao, req.user.id);
     }
 
     // Remove transação do banco

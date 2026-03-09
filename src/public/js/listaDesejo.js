@@ -1,6 +1,6 @@
 import { apiFetch } from './config.js';
 import { limparCategoriaSelecionada } from './categoria.js';
-import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
+import { abrirModal, fecharModal, abrirModalErro, mostrarErroInline, limparErroInline } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
   formatarValor,
@@ -22,6 +22,25 @@ import {
 // Array para armazenar tags temporárias do formulário
 let tags = [];
 
+const URL_LISTA_DESEJOS = `${window.location.origin}/lista-desejos`;
+const URL_CATEGORIAS = `${window.location.origin}/categorias`;
+const URL_CONTAS = `${window.location.origin}/contas`;
+const URL_TRANSACOES = `${window.location.origin}/transacoes`;
+
+async function carregarDesejos() {
+  return apiFetch(URL_LISTA_DESEJOS);
+}
+
+function mostrarErroValidacao(mensagem) {
+  abrirModalErro(mensagem);
+}
+
+function resetarFormularioDesejo(form) {
+  resetarTagsFormulario(tags);
+  form.reset();
+  limparCategoriaSelecionada();
+}
+
 // Inicializa e gerencia envio do formulário de criação de desejo
 export async function criarDesejo(formId = 'formListaDesejo') {
   const form = $(formId);
@@ -35,30 +54,31 @@ export async function criarDesejo(formId = 'formListaDesejo') {
 
     // Valida que categoria foi selecionada (campo obrigatório)
     if (!categoria) {
-      alert('Por favor, selecione uma categoria');
+      mostrarErroValidacao('Por favor, selecione uma categoria');
       return;
     }
 
-    // Envia dados do desejo para API
-    await apiFetch(window.location.origin + '/lista-desejos', {
-      method: 'POST',
-      body: JSON.stringify({
-        titulo: form.titulo.value,
-        valor: Number(form.valor.value),
-        categoria,
-        tipoDespesa: tipoDespesa || undefined,
-        tags: [...tags],
-      }),
-    });
+    try {
+      // Envia dados do desejo para API
+      await apiFetch(URL_LISTA_DESEJOS, {
+        method: 'POST',
+        body: JSON.stringify({
+          titulo: form.titulo.value,
+          valor: Number(form.valor.value),
+          categoria,
+          tipoDespesa: tipoDespesa || undefined,
+          tags: [...tags],
+        }),
+      });
 
-    // Reseta estado do formulário
-    resetarTagsFormulario(tags);
+      // Reseta estado do formulário
+      resetarFormularioDesejo(form);
 
-    form.reset();
-    limparCategoriaSelecionada();
-
-    // Atualiza listagem na tela
-    listarDesejos();
+      // Atualiza listagem na tela
+      listarDesejos();
+    } catch (erro) {
+      mostrarErroValidacao(erro.message || 'Erro ao criar desejo');
+    }
   });
 }
 
@@ -67,7 +87,7 @@ export async function listarDesejos() {
   const container = $('listaDesejos');
   if (!container) return;
 
-  const desejos = await apiFetch(window.location.origin + '/lista-desejos');
+  const desejos = await carregarDesejos();
   const total = calcularTotalItens(desejos);
 
   setTextById('totalDesejos', `R$ ${formatarValor(total)}`);
@@ -128,15 +148,14 @@ function criarCardDesejo(d) {
 
 // Abre modal para editar item da lista de desejos
 window.editarDesejo = async (id) => {
-  const desejo = (
-    await apiFetch(window.location.origin + '/lista-desejos')
-  ).find((item) => item._id === id);
-  const categorias = await apiFetch(window.location.origin + '/categorias');
+  const desejo = (await carregarDesejos()).find((item) => item._id === id);
+  const categorias = await apiFetch(URL_CATEGORIAS);
 
   if (!desejo) return;
 
   let tagsModal = [...(desejo.tags || [])];
 
+  limparErroInline();
   abrirModal({
     titulo: 'Editar item da lista de desejos',
     conteudoHTML: `
@@ -177,6 +196,8 @@ window.editarDesejo = async (id) => {
       </div>
     `,
     onSalvar: async () => {
+      limparErroInline();
+      
       const novoTitulo = $('modalTituloDesejo')?.value?.trim();
       const novoValor = Number($('modalValorDesejo')?.value);
       const novaCategoria = $('modalCategoriaDesejo')?.value;
@@ -184,28 +205,34 @@ window.editarDesejo = async (id) => {
 
       // Valida campos obrigatórios
       if (!novoTitulo || !novoValor || !novaCategoria) {
-        alert('Por favor, preencha todos os campos obrigatorios');
+        mostrarErroInline(
+          'Por favor, preencha todos os campos obrigatórios'
+        );
         return;
       }
 
-      const dados = {
-        titulo: novoTitulo,
-        valor: novoValor,
-        categoria: novaCategoria,
-        tags: tagsModal,
-      };
+      try {
+        const dados = {
+          titulo: novoTitulo,
+          valor: novoValor,
+          categoria: novaCategoria,
+          tags: tagsModal,
+        };
 
-      if (novoTipoDespesa) {
-        dados.tipoDespesa = novoTipoDespesa;
+        if (novoTipoDespesa) {
+          dados.tipoDespesa = novoTipoDespesa;
+        }
+
+        await apiFetch(`${URL_LISTA_DESEJOS}/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(dados),
+        });
+
+        fecharModal();
+        listarDesejos();
+      } catch (erro) {
+        mostrarErroInline(erro.message || 'Erro ao atualizar desejo');
       }
-
-      await apiFetch(`${window.location.origin}/lista-desejos/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(dados),
-      });
-
-      fecharModal();
-      listarDesejos();
     },
   });
 
@@ -237,13 +264,16 @@ window.editarDesejo = async (id) => {
 
 // Converte um desejo em transacao real e remove da lista
 window.realizarDesejo = async (id) => {
-  const desejo = (
-    await apiFetch(window.location.origin + '/lista-desejos')
-  ).find((item) => item._id === id);
-  const contas = await apiFetch(window.location.origin + '/contas');
+  const desejo = (await carregarDesejos()).find((item) => item._id === id);
+  const contas = await apiFetch(URL_CONTAS);
 
   if (!desejo) return;
 
+  const opcoesConta = contas
+    .map((c) => `<option value="${c._id}">${escaparHtml(c.nome)}</option>`)
+    .join('');
+
+  limparErroInline();
   abrirModal({
     titulo: 'Realizar compra',
     conteudoHTML: `
@@ -251,10 +281,11 @@ window.realizarDesejo = async (id) => {
         Transformar <strong>${escaparHtml(desejo.titulo)}</strong> em uma transacao real.
       </p>
       <div class="form-group">
-        <label>Conta</label>
+        <label>Conta ou carteira</label>
         <select id="modalContaDesejo" required>
-          <option value="" selected disabled>Selecione a conta</option>
-          ${contas.map((c) => `<option value="${c._id}">${escaparHtml(c.nome)}</option>`).join('')}
+          <option value="" selected disabled>Selecione a origem</option>
+          <option value="carteira">Carteira (dinheiro físico)</option>
+          ${opcoesConta}
         </select>
       </div>
       <div class="form-group">
@@ -275,31 +306,31 @@ window.realizarDesejo = async (id) => {
       </div>
     `,
     onSalvar: async () => {
+      limparErroInline();
+      
       const conta = $('modalContaDesejo')?.value;
       const valor = Number($('modalValorTransacao')?.value);
       const status = $('modalStatusTransacao')?.value;
       const data = $('modalDataTransacao')?.value;
 
-      // Valida selecao de conta (obrigatorio para transacao)
       if (!conta) {
-        alert('Por favor, selecione uma conta');
+        mostrarErroInline('Por favor, selecione uma conta ou carteira');
         return;
       }
 
       if (!status) {
-        alert('Por favor, selecione um status');
+        mostrarErroInline('Por favor, selecione um status');
         return;
       }
 
-      // Valida valor positivo
       if (!valor || valor <= 0) {
-        alert('Por favor, informe um valor valido');
+        mostrarErroInline('Por favor, informe um valor válido');
         return;
       }
 
       try {
         // Cria a transacao com dados do desejo
-        await apiFetch(window.location.origin + '/transacoes', {
+        await apiFetch(URL_TRANSACOES, {
           method: 'POST',
           body: JSON.stringify({
             titulo: desejo.titulo,
@@ -320,16 +351,14 @@ window.realizarDesejo = async (id) => {
         });
 
         // Remove o desejo da lista apos conversao bem-sucedida
-        await apiFetch(`${window.location.origin}/lista-desejos/${id}`, {
+        await apiFetch(`${URL_LISTA_DESEJOS}/${id}`, {
           method: 'DELETE',
         });
 
         fecharModal();
         listarDesejos();
-        alert('Desejo realizado! Transacao criada com sucesso.');
       } catch (err) {
-        fecharModal();
-        abrirModalErro(err.message);
+        mostrarErroInline(err.message);
       }
     },
   });
@@ -342,13 +371,12 @@ window.deletarDesejo = async (id) => {
     mensagem: 'Tem certeza que deseja deletar este item da lista de desejos?',
     onConfirmar: async () => {
       try {
-        await apiFetch(`${window.location.origin}/lista-desejos/${id}`, {
+        await apiFetch(`${URL_LISTA_DESEJOS}/${id}`, {
           method: 'DELETE',
         });
         fecharModal();
         listarDesejos();
       } catch (err) {
-        fecharModal();
         abrirModalErro(err.message);
       }
     },

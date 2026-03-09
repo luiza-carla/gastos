@@ -24,7 +24,13 @@ class TransacaoService {
       dados,
       { returnDocument: 'after' }
     );
-    if (!transacao) throw new Error('Transação não encontrada');
+
+    if (!transacao) {
+      const erro = new Error('Transação não encontrada');
+      erro.statusCode = 404;
+      throw erro;
+    }
+
     return transacao;
   }
 
@@ -34,7 +40,13 @@ class TransacaoService {
       _id: id,
       usuario: usuarioId,
     });
-    if (!transacao) throw new Error('Transação não encontrada');
+
+    if (!transacao) {
+      const erro = new Error('Transação não encontrada');
+      erro.statusCode = 404;
+      throw erro;
+    }
+
     return transacao;
   }
 }

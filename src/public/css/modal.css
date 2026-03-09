@@ -67,3 +67,22 @@
 #modalFooterErro .btn-danger:hover {
   background: var(--vermelho-hover);
 }
+
+.modal-erro-inline {
+  display: none;
+  padding: 12px;
+  background-color: var(--vermelho-claro);
+  border-left: 4px solid var(--vermelho-escuro);
+  margin-bottom: 12px;
+  border-radius: 4px;
+}
+
+.modal-erro-inline.ativo {
+  display: block;
+}
+
+.modal-mensagem-erro {
+  margin: 0;
+  color: var(--vermelho-escuro);
+  font-size: 14px;
+}

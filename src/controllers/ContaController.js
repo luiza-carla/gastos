@@ -25,6 +25,18 @@ class ContaController {
     await ContaService.deletar(req.params.id, req.user.id);
     res.json({ mensagem: 'Conta deletada' });
   }
+
+  // Transfere entre contas do usuário
+  async transferir(req, res) {
+    const { contaDestinoId, valor } = req.body;
+    const resultado = await ContaService.transferir(
+      req.params.id,
+      contaDestinoId,
+      valor,
+      req.user.id
+    );
+    res.json(resultado);
+  }
 }
 
 module.exports = new ContaController();

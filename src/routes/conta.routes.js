@@ -8,5 +8,10 @@ router.post('/', autenticacao, asyncHandler(ContaController.criar));
 router.get('/', autenticacao, asyncHandler(ContaController.listar));
 router.put('/:id', autenticacao, asyncHandler(ContaController.atualizar));
 router.delete('/:id', autenticacao, asyncHandler(ContaController.deletar));
+router.post(
+  '/:id/transferir',
+  autenticacao,
+  asyncHandler(ContaController.transferir)
+);
 
 module.exports = router;

@@ -1,0 +1,171 @@
+/* Grid para exibir cards */
+.contas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-top: 15px;
+}
+
+/* Card de conta */
+.conta-card {
+  background: var(--cinza-claro);
+  border: 1px solid var(--cinza-linha);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: all 0.2s ease;
+}
+
+.conta-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+.conta-nome {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--cinza-1);
+}
+
+.conta-nome i {
+  color: var(--verde-azul);
+}
+
+.conta-tipo {
+  font-size: 13px;
+  color: var(--cinza-texto);
+}
+
+.conta-saldo {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--verde);
+  margin: 8px 0;
+}
+
+.conta-acoes {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-editar,
+.btn-deletar,
+.btn-transferir-conta {
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 500;
+  flex: 1;
+}
+
+.btn-editar {
+  background: var(--verde-azul);
+  color: var(--branco);
+}
+
+.btn-editar:hover {
+  background: var(--verde);
+  transform: scale(1.05);
+}
+
+.btn-deletar {
+  background: var(--vermelho);
+  color: var(--branco);
+}
+
+.btn-deletar:hover {
+  background: var(--vermelho-hover);
+  transform: scale(1.05);
+}
+
+.btn-transferir-conta {
+  background: var(--cinza-2);
+  color: var(--branco);
+}
+
+.btn-transferir-conta:hover {
+  background: var(--cinza-3);
+  transform: scale(1.05);
+}
+
+/* Card de carteira */
+.carteira-card {
+  background: var(--cinza-claro);
+  border: 1px solid var(--cinza-linha);
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+
+.carteira-header {
+  margin-bottom: 12px;
+}
+
+.carteira-saldo {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--verde);
+}
+
+.carteira-acoes {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-adicionar,
+.btn-transferir {
+  border: none;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  flex: 1;
+}
+
+.btn-adicionar {
+  background: var(--verde);
+  color: var(--branco);
+}
+
+.btn-adicionar:hover {
+  background: var(--verde-forte);
+  transform: scale(1.05);
+}
+
+.btn-transferir {
+  background: var(--cinza-2);
+  color: var(--branco);
+}
+
+.btn-transferir:hover {
+  background: var(--cinza-3);
+  transform: scale(1.05);
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .contas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+

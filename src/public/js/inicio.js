@@ -16,6 +16,7 @@ export async function carregarResumo() {
     setTextById('saldo', formatarValor(dados.saldo));
     setTextById('totalSalarios', formatarValor(dados.salarios));
     setTextById('saldoContas', formatarValor(dados.saldoContas));
+    setTextById('saldoCarteira', formatarValor(dados.saldoCarteira || 0));
     setTextById('totalEntradas', formatarValor(dados.entradas));
     setTextById('totalSaidas', formatarValor(dados.saidas));
     setTextById('saldoFinal', formatarValor(dados.saldoFinal ?? dados.saldo));

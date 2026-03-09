@@ -4,6 +4,8 @@ import {
   hideElement,
   showModal,
   hideModal,
+  addClass,
+  removeClass,
   $,
 } from './helpers/index.js';
 
@@ -48,7 +50,7 @@ export function abrirModalErro(mensagem) {
   );
   setHTMLById(
     'modalConteudo',
-    `<p style="margin: 0; padding: 10px 0; color: #666; line-height: 1.6;">${mensagem}</p>`
+    `<p style="margin: 0; padding: 10px 0; color: var(--cinza-texto); line-height: 1.6;">${mensagem}</p>`
   );
 
   hideElement($('modalFooterEditar'));
@@ -56,6 +58,20 @@ export function abrirModalErro(mensagem) {
   showElement($('modalFooterErro'));
 
   showModal();
+}
+
+// Mostra erro inline dentro do modal de edição
+export function mostrarErroInline(mensagem) {
+  const erroEl = $('modalErroInline');
+  setHTMLById('modalMensagemErro', mensagem);
+  if (erroEl) addClass(erroEl, 'ativo');
+}
+
+// Limpa erros inline do modal
+export function limparErroInline() {
+  const erroEl = $('modalErroInline');
+  if (erroEl) removeClass(erroEl, 'ativo');
+  setHTMLById('modalMensagemErro', '');
 }
 
 // Trata cliques dos botoes do modal

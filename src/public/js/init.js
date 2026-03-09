@@ -1,5 +1,6 @@
 import { verificarAutenticacao } from './auth.js';
 import { criarConta, popularSelectContas, listarContas } from './conta.js';
+import { exibirCarteira } from './carteira.js';
 import { inicializarCategorias } from './categoria.js';
 import { criarTransacao, listarTransacoes } from './transacao.js';
 import { criarDesejo, listarDesejos } from './listaDesejo.js';
@@ -31,6 +32,10 @@ import { $ } from './helpers/index.js';
 (async function () {
   if ($('contas')) {
     await listarContas();
+  }
+
+  if ($('carteiraSaldo')) {
+    await exibirCarteira();
   }
 
   if ($('conta') || $('contaSalario')) {

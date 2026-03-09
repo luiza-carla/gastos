@@ -11,7 +11,13 @@ const TransacaoSchema = new mongoose.Schema(
     conta: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Conta',
-      required: true,
+      required: false,
+    },
+
+    fonteSaldo: {
+      type: String,
+      enum: ['conta', 'carteira'],
+      default: 'conta',
     },
 
     titulo: {

@@ -1,22 +1,12 @@
 const mongoose = require('mongoose');
 
-const ContaSchema = new mongoose.Schema(
+const CarteiraSchema = new mongoose.Schema(
   {
     usuario: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Usuario',
       required: true,
-    },
-
-    nome: {
-      type: String,
-      required: true,
-    },
-
-    tipo: {
-      type: String,
-      enum: ['corrente', 'credito', 'investimento'],
-      required: true,
+      unique: true,
     },
 
     saldo: {
@@ -32,4 +22,4 @@ const ContaSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model('Conta', ContaSchema);
+module.exports = mongoose.model('Carteira', CarteiraSchema);

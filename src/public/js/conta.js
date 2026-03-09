@@ -1,19 +1,38 @@
 import { apiFetch } from './config.js';
-import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
+import { abrirModal, fecharModal, abrirModalErro, mostrarErroInline, limparErroInline } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
   formatarValor,
   criarOpcao,
   criarCardsHTML,
+  populateSelect,
   capitalizar,
+  escaparHtml,
   $,
-  clearElement,
   setHTMLById,
 } from './helpers/index.js';
 
+const VALOR_CARTEIRA = 'carteira';
+
+async function buscarContas() {
+  return apiFetch('/contas');
+}
+
+function formatarNomeConta(conta) {
+  return `${escaparHtml(conta.nome)} (${capitalizar(conta.tipo)})`;
+}
+
+async function atualizarSaldosTela() {
+  await listarContas();
+
+  if (window.exibirCarteira) {
+    await window.exibirCarteira();
+  }
+}
+
 // Lista todas as contas do usuário
 export async function listarContas() {
-  const contas = await apiFetch('/contas');
+  const contas = await buscarContas();
 
   const container = $('contas');
 
@@ -22,8 +41,7 @@ export async function listarContas() {
   <div class="conta-card">
 
   <div class="conta-nome">
-  <i class="fa-solid fa-wallet"></i>
-  ${c.nome}
+  ${escaparHtml(c.nome)}
   </div>
 
   <div class="conta-tipo">
@@ -38,6 +56,10 @@ export async function listarContas() {
 
   <button class="btn-editar" onclick="editarConta('${c._id}')">
   <i class="fa-solid fa-pen"></i>
+  </button>
+
+  <button class="btn-transferir-conta" onclick="transferirDaConta('${c._id}')">
+  <i class="fa-solid fa-exchange"></i>
   </button>
 
   <button class="btn-deletar" onclick="deletarConta('${c._id}')">
@@ -55,6 +77,9 @@ export async function listarContas() {
   return contas;
 }
 
+// Torna listarContas acessível globalmente
+window.listarContas = listarContas;
+
 // Cria nova conta a partir de formulário
 export async function criarConta(formId, callback) {
   const form = $(formId);
@@ -62,7 +87,7 @@ export async function criarConta(formId, callback) {
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
 
-    await apiFetch(window.location.origin + '/contas', {
+    await apiFetch('/contas', {
       method: 'POST',
       body: JSON.stringify({
         nome: form.nome.value,
@@ -78,7 +103,7 @@ export async function criarConta(formId, callback) {
 
 // Abre modal para editar conta existente
 window.editarConta = async (id) => {
-  const conta = (await apiFetch('/contas')).find((c) => c._id === id);
+  const conta = (await buscarContas()).find((c) => c._id === id);
   if (!conta) return;
 
   abrirModal({
@@ -86,34 +111,42 @@ window.editarConta = async (id) => {
     conteudoHTML: `
       <div class="form-group">
         <label>Nome</label>
-        <input type="text" id="modalNomeConta" value="${conta.nome}" required>
+        <input type="text" id="modalNomeConta" value="${escaparHtml(conta.nome)}" required>
       </div>
       <div class="form-group">
         <label>Tipo</label>
         <select id="modalTipoConta" required>
           <option value="corrente" ${conta.tipo === 'corrente' ? 'selected' : ''}>Corrente</option>
           <option value="credito" ${conta.tipo === 'credito' ? 'selected' : ''}>Crédito</option>
-          <option value="dinheiro" ${conta.tipo === 'dinheiro' ? 'selected' : ''}>Dinheiro</option>
           <option value="investimento" ${conta.tipo === 'investimento' ? 'selected' : ''}>Investimento</option>
         </select>
       </div>
     `,
     onSalvar: async () => {
+      limparErroInline();
+      
       const novoNome = $('modalNomeConta')?.value;
       const novoTipo = $('modalTipoConta')?.value;
 
-      if (!novoNome || !novoTipo) return;
+      if (!novoNome || !novoTipo) {
+        mostrarErroInline('Por favor, preencha todos os campos obrigatórios');
+        return;
+      }
 
-      await apiFetch(`${window.location.origin}/contas/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          nome: novoNome,
-          tipo: novoTipo,
-        }),
-      });
+      try {
+        await apiFetch(`/contas/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            nome: novoNome,
+            tipo: novoTipo,
+          }),
+        });
 
-      fecharModal();
-      listarContas();
+        fecharModal();
+        listarContas();
+      } catch (err) {
+        mostrarErroInline(err.message || 'Erro ao atualizar conta');
+      }
     },
   });
 };
@@ -125,13 +158,10 @@ window.deletarConta = async (id) => {
     mensagem: 'Tem certeza que deseja deletar esta conta?',
     onConfirmar: async () => {
       try {
-        await apiFetch(`${window.location.origin}/contas/${id}`, {
-          method: 'DELETE',
-        });
+        await apiFetch(`/contas/${id}`, { method: 'DELETE' });
         fecharModal();
         listarContas();
       } catch (err) {
-        fecharModal();
         abrirModalErro(err.message);
       }
     },
@@ -143,9 +173,7 @@ export async function popularSelectContas(selectId = 'conta') {
   const select = $(selectId);
   if (!select) return;
 
-  const contas = await listarContas();
-
-  clearElement(select);
+  const contas = await buscarContas();
 
   const placeholderTexto = 'Selecione a conta';
 
@@ -154,7 +182,101 @@ export async function popularSelectContas(selectId = 'conta') {
 
   select.innerHTML = `<option value="" ${placeholderAttrs}>${placeholderTexto}</option>`;
 
-  contas.forEach((c) => {
-    select.innerHTML += criarOpcao(c._id, `${c.nome} (${capitalizar(c.tipo)})`);
-  });
+  if (selectId === 'conta') {
+    select.innerHTML += criarOpcao(
+      VALOR_CARTEIRA,
+      'Carteira (dinheiro físico)'
+    );
+  }
+
+  populateSelect(
+    select,
+    contas,
+    (conta) => conta._id,
+    (conta) => formatarNomeConta(conta)
+  );
 }
+
+// Abre modal de transferência de conta para conta ou carteira
+window.transferirDaConta = async (contaOrigemId) => {
+  const contas = await buscarContas();
+  const contaOrigem = contas.find((c) => c._id === contaOrigemId);
+
+  if (!contaOrigem) return;
+
+  // Outras contas (exceto a de origem)
+  const outrasContas = contas.filter((c) => c._id !== contaOrigemId);
+
+  let optionsHTML = `<option value="${VALOR_CARTEIRA}">Dinheiro físico</option>`;
+
+  outrasContas.forEach((c) => {
+    optionsHTML += `<option value="${c._id}">${formatarNomeConta(c)}</option>`;
+  });
+
+  abrirModal({
+    titulo: 'Transferir de conta',
+    conteudoHTML: `
+      <div class="form-group">
+        <label>De</label>
+        <input type="text" value="${escaparHtml(contaOrigem.nome)}" disabled>
+      </div>
+      <div class="form-group">
+        <label>Para</label>
+        <select id="modalContaDestino" required>
+          <option value="" selected disabled>Selecione o destino</option>
+          ${optionsHTML}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Valor</label>
+        <input type="number" id="modalValorTransferenciaConta" step="0.01" min="0" required>
+      </div>
+      <div class="form-group">
+        <small style="color: var(--cinza-texto);">Saldo disponível: R$ ${formatarValor(contaOrigem.saldo)}</small>
+      </div>
+    `,
+    onSalvar: async () => {
+      const destino = $('modalContaDestino')?.value;
+      const valor = parseFloat($('modalValorTransferenciaConta')?.value);
+
+      if (!destino || !valor || valor <= 0) {
+        abrirModalErro('Preencha todos os campos com valores válidos');
+        return;
+      }
+
+      if (valor > contaOrigem.saldo) {
+        abrirModalErro('Saldo insuficiente na conta');
+        return;
+      }
+
+      try {
+        // Se o destino é carteira
+        if (destino === VALOR_CARTEIRA) {
+          await apiFetch('/carteira/transferir', {
+            method: 'POST',
+            body: JSON.stringify({
+              contaId: contaOrigemId,
+              valor,
+              direcao: 'conta-para-carteira',
+            }),
+          });
+        } else {
+          // Transferência entre contas
+          await apiFetch(`/contas/${contaOrigemId}/transferir`, {
+            method: 'POST',
+            body: JSON.stringify({
+              contaDestinoId: destino,
+              valor,
+            }),
+          });
+        }
+
+        fecharModal();
+        await atualizarSaldosTela();
+      } catch (err) {
+        abrirModalErro(err.message);
+      }
+    },
+  });
+};
+

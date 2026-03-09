@@ -1,6 +1,7 @@
 const Transacao = require('../models/Transacao');
 const Categoria = require('../models/Categoria');
 const Conta = require('../models/Conta');
+const Carteira = require('../models/Carteira');
 const {
   somarCampo,
   totaisTransacoes,
@@ -103,6 +104,7 @@ class ResumoService {
     );
 
     const contas = await Conta.find({ usuario: usuarioId });
+    const carteira = await Carteira.findOne({ usuario: usuarioId, ativa: true });
 
     // Busca transações do mês EXCLUINDO salários (para não duplicar)
     const filtroTransacoes = {
@@ -139,17 +141,19 @@ class ResumoService {
       salariosDevidosAteHoje - salariosProcessadosNoMes
     );
     const saldoContas = somarCampo(contas, 'saldo');
+    const saldoCarteira = carteira?.saldo || 0;
 
     // Calcula entradas e saídas do mês (SEM incluir salários)
     const { entradas, saidas } = totaisTransacoes(transacoesMes);
 
-    // Saldo = saldo das contas + salários pendentes de processamento
-    const saldo = saldoContas + salariosPendentesLancamento;
+    // Saldo = contas + carteira + salários pendentes de processamento
+    const saldo = saldoContas + saldoCarteira + salariosPendentesLancamento;
 
     return {
       saldo,
       salarios: salariosDevidosAteHoje,
       saldoContas,
+      saldoCarteira,
       entradas,
       saidas,
     };
@@ -175,6 +179,7 @@ class ResumoService {
     );
 
     const contas = await Conta.find({ usuario: usuarioId });
+    const carteira = await Carteira.findOne({ usuario: usuarioId, ativa: true });
 
     // Busca pendentes EXCLUINDO salários (salários têm tratamento separado)
     const filtroPendentes = {
@@ -207,15 +212,17 @@ class ResumoService {
     );
 
     const saldoContas = somarCampo(contas, 'saldo');
+    const saldoCarteira = carteira?.saldo || 0;
     const saidasPendentes = somaSaidas(pendentes);
 
-    // O saldo atual já inclui todas as transações pagas + salários pendentes
-    const saldoAtual = saldoContas + salariosPendentesLancamento;
+    // O saldo atual inclui contas + carteira + salários pendentes
+    const saldoAtual = saldoContas + saldoCarteira + salariosPendentesLancamento;
     const saldoProjetado = saldoAtual - saidasPendentes;
 
     return {
       saldoAtual,
       saldoProjetado,
+      saldoCarteira,
       saidasPendentes,
     };
   }

@@ -1,6 +1,6 @@
 import { apiFetch } from './config.js';
 import { limparCategoriaSelecionada } from './categoria.js';
-import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
+import { abrirModal, fecharModal, abrirModalErro, mostrarErroInline, limparErroInline } from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
 import {
   formatarValor,
@@ -25,6 +25,30 @@ import {
 
 // Armazena tags temporarias do formulario
 let tags = [];
+
+const URL_TRANSACOES = `${window.location.origin}/transacoes`;
+const URL_CATEGORIAS = `${window.location.origin}/categorias`;
+
+function mostrarErroApi(erro, mensagemPadrao) {
+  abrirModalErro(erro.message || mensagemPadrao);
+}
+
+async function carregarTransacoes() {
+  return apiFetch(URL_TRANSACOES);
+}
+
+function resetarFormularioTransacao(
+  form,
+  tipoDespesaSelect,
+  parcelasContainer
+) {
+  resetarTagsFormulario(tags);
+  form.reset();
+  hideById('tipoDespesaContainer');
+  tipoDespesaSelect.value = '';
+  hideElement(parcelasContainer);
+  limparCategoriaSelecionada();
+}
 
 // Inicializa envio do formulario de transacao
 export async function criarTransacao(formId = 'formTransacao') {
@@ -63,34 +87,32 @@ export async function criarTransacao(formId = 'formTransacao') {
     const tipoDespesa =
       tipoSelect.value === 'saida' ? tipoDespesaSelect.value : null;
 
-    await apiFetch(window.location.origin + '/transacoes', {
-      method: 'POST',
-      body: JSON.stringify({
-        titulo: form.titulo.value,
-        valor: Number(form.valor.value),
-        tipo: tipoSelect.value,
-        tipoDespesa,
-        conta: conta,
-        categoria: categoria,
-        status: form.status.value,
-        recorrencia: form.recorrencia.value,
-        tags: [...tags],
-        parcelamento: {
-          totalParcelas: Number(form.totalParcelas.value || 1),
-          parcelaAtual: Number(form.parcelaAtual.value || 1),
-        },
-      }),
-    });
+    try {
+      await apiFetch(URL_TRANSACOES, {
+        method: 'POST',
+        body: JSON.stringify({
+          titulo: form.titulo.value,
+          valor: Number(form.valor.value),
+          tipo: tipoSelect.value,
+          tipoDespesa,
+          conta: conta,
+          categoria: categoria,
+          status: form.status.value,
+          recorrencia: form.recorrencia.value,
+          tags: [...tags],
+          parcelamento: {
+            totalParcelas: Number(form.totalParcelas.value || 1),
+            parcelaAtual: Number(form.parcelaAtual.value || 1),
+          },
+        }),
+      });
 
-    resetarTagsFormulario(tags);
+      resetarFormularioTransacao(form, tipoDespesaSelect, parcelasContainer);
 
-    form.reset();
-    hideById('tipoDespesaContainer');
-    tipoDespesaSelect.value = '';
-    hideElement(parcelasContainer);
-    limparCategoriaSelecionada();
-
-    listarTransacoes();
+      listarTransacoes();
+    } catch (erro) {
+      mostrarErroApi(erro, 'Erro ao criar transação');
+    }
   });
 }
 
@@ -100,7 +122,7 @@ export async function listarTransacoes() {
   // Gera HTML de um card de transacao
   if (!container) return;
 
-  const transacoes = await apiFetch(window.location.origin + '/transacoes');
+  const transacoes = await carregarTransacoes();
   const total = calcularTotalItens(transacoes, (t) =>
     t.tipo === 'saida' ? -Number(t.valor || 0) : Number(t.valor || 0)
   );
@@ -130,7 +152,10 @@ function criarCardTransacao(t) {
 
   const valorFormatado = formatarValor(t.valor);
 
-  const conta = t.conta?.nome || 'Sem conta';
+  const conta =
+    t.fonteSaldo === 'carteira'
+      ? 'Carteira (dinheiro físico)'
+      : t.conta?.nome || 'Sem conta';
   const categoria = criarBadgeCategoria(t.categoria);
   const corCategoria = t.categoria?.cor || '#95a5a6';
 
@@ -224,10 +249,8 @@ function criarCardTransacao(t) {
 
 // Abre modal para edicao de transacao
 window.editarTransacao = async (id) => {
-  const transacao = (
-    await apiFetch(window.location.origin + '/transacoes')
-  ).find((t) => t._id === id);
-  const categorias = await apiFetch(window.location.origin + '/categorias');
+  const transacao = (await carregarTransacoes()).find((t) => t._id === id);
+  const categorias = await apiFetch(URL_CATEGORIAS);
 
   if (!transacao) return;
 
@@ -291,6 +314,8 @@ window.editarTransacao = async (id) => {
       ${tipoDespesaField}
     `,
     onSalvar: async () => {
+      limparErroInline();
+      
       const novoTitulo = $('modalTituloTransacao')?.value?.trim();
       const novoValor = Number($('modalValorTransacao')?.value);
       const novoTipo = $('modalTipoTransacao')?.value;
@@ -304,8 +329,10 @@ window.editarTransacao = async (id) => {
         !novoTipo ||
         !novoStatus ||
         !novaCategoria
-      )
+      ) {
+        mostrarErroInline('Por favor, preencha todos os campos obrigatórios');
         return;
+      }
 
       const dados = {
         titulo: novoTitulo,
@@ -320,13 +347,17 @@ window.editarTransacao = async (id) => {
         dados.tipoDespesa = novoTipoDespesa || undefined;
       }
 
-      await apiFetch(`${window.location.origin}/transacoes/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(dados),
-      });
+      try {
+        await apiFetch(`${URL_TRANSACOES}/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify(dados),
+        });
 
-      fecharModal();
-      listarTransacoes();
+        fecharModal();
+        listarTransacoes();
+      } catch (erro) {
+        mostrarErroInline(erro.message || 'Erro ao atualizar transação');
+      }
     },
   });
 
@@ -376,14 +407,13 @@ window.deletarTransacao = async (id) => {
     mensagem: 'Tem certeza que deseja deletar esta transação?',
     onConfirmar: async () => {
       try {
-        await apiFetch(`${window.location.origin}/transacoes/${id}`, {
+        await apiFetch(`${URL_TRANSACOES}/${id}`, {
           method: 'DELETE',
         });
         fecharModal();
         listarTransacoes();
       } catch (err) {
-        fecharModal();
-        abrirModalErro(err.message);
+        mostrarErroApi(err, 'Erro ao deletar transação');
       }
     },
   });
