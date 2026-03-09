@@ -104,7 +104,10 @@ class ResumoService {
     );
 
     const contas = await Conta.find({ usuario: usuarioId });
-    const carteira = await Carteira.findOne({ usuario: usuarioId, ativa: true });
+    const carteira = await Carteira.findOne({
+      usuario: usuarioId,
+      ativa: true,
+    });
 
     // Busca transações do mês EXCLUINDO salários (para não duplicar)
     const filtroTransacoes = {
@@ -179,7 +182,10 @@ class ResumoService {
     );
 
     const contas = await Conta.find({ usuario: usuarioId });
-    const carteira = await Carteira.findOne({ usuario: usuarioId, ativa: true });
+    const carteira = await Carteira.findOne({
+      usuario: usuarioId,
+      ativa: true,
+    });
 
     // Busca pendentes EXCLUINDO salários (salários têm tratamento separado)
     const filtroPendentes = {
@@ -216,7 +222,8 @@ class ResumoService {
     const saidasPendentes = somaSaidas(pendentes);
 
     // O saldo atual inclui contas + carteira + salários pendentes
-    const saldoAtual = saldoContas + saldoCarteira + salariosPendentesLancamento;
+    const saldoAtual =
+      saldoContas + saldoCarteira + salariosPendentesLancamento;
     const saldoProjetado = saldoAtual - saidasPendentes;
 
     return {

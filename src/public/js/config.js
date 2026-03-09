@@ -31,7 +31,7 @@ export async function apiFetch(url, options = {}) {
       if (e.message && e.message !== text) {
         throw e;
       }
-      throw new Error(text);
+      throw new Error(text, { cause: e });
     }
   }
 

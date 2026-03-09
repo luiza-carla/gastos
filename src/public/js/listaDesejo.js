@@ -248,7 +248,7 @@ window.editarDesejo = async (id) => {
     `,
     onSalvar: async () => {
       limparErroInline();
-      
+
       const novoTitulo = $('modalTituloDesejo')?.value?.trim();
       const novoValor = Number($('modalValorDesejo')?.value);
       const novaCategoria = $('modalCategoriaDesejo')?.value;
@@ -256,9 +256,7 @@ window.editarDesejo = async (id) => {
 
       // Valida campos obrigatórios
       if (!novoTitulo || !novoValor || !novaCategoria) {
-        mostrarErroInline(
-          'Por favor, preencha todos os campos obrigatórios'
-        );
+        mostrarErroInline('Por favor, preencha todos os campos obrigatórios');
         return;
       }
 
@@ -358,7 +356,7 @@ window.realizarDesejo = async (id) => {
     `,
     onSalvar: async () => {
       limparErroInline();
-      
+
       const conta = $('modalContaDesejo')?.value;
       const valor = Number($('modalValorTransacao')?.value);
       const status = $('modalStatusTransacao')?.value;

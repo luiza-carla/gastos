@@ -18,12 +18,12 @@ export function mostrarNotificacao(mensagem, tipo = 'sucesso', duracao = 3000) {
   notificacao.className = `notificacao notificacao-${tipo}`;
 
   const icone = ICONES_NOTIFICACAO[tipo] || ICONES_NOTIFICACAO.sucesso;
-  
+
   notificacao.innerHTML = `
     <i class="fa-solid ${icone}"></i>
     <span>${mensagem}</span>
   `;
-  
+
   // Adicionar à página
   document.body.appendChild(notificacao);
 

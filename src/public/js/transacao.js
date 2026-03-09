@@ -109,7 +109,13 @@ export async function criarTransacao(formId = 'formTransacao') {
       tipoSelect.value === 'saida' ? tipoDespesaSelect.value : null;
     const valor = Number(form.valor.value);
 
-    if (!tituloTransacao || !valor || !tipoSelect.value || !conta || !categoria) {
+    if (
+      !tituloTransacao ||
+      !valor ||
+      !tipoSelect.value ||
+      !conta ||
+      !categoria
+    ) {
       mostrarErroInline(
         'Por favor, preencha todos os campos obrigatórios',
         FORM_ERRO_ID,
@@ -148,7 +154,9 @@ export async function criarTransacao(formId = 'formTransacao') {
       });
 
       if (acao === 'salvar-adicionar-outro') {
-        mostrarNotificacao(`Transação "${tituloTransacao}" adicionada com sucesso!`);
+        mostrarNotificacao(
+          `Transação "${tituloTransacao}" adicionada com sucesso!`
+        );
         resetarFormularioTransacao(form, tipoDespesaSelect, parcelasContainer);
       } else if (window.location.pathname.includes('adicionar-transacao')) {
         persistirNotificacaoParaProximaTela(
@@ -156,7 +164,9 @@ export async function criarTransacao(formId = 'formTransacao') {
         );
         window.location.href = '/html/transacoes.html';
       } else {
-        mostrarNotificacao(`Transação "${tituloTransacao}" adicionada com sucesso!`);
+        mostrarNotificacao(
+          `Transação "${tituloTransacao}" adicionada com sucesso!`
+        );
         resetarFormularioTransacao(form, tipoDespesaSelect, parcelasContainer);
         listarTransacoes();
       }
@@ -373,7 +383,7 @@ window.editarTransacao = async (id) => {
     `,
     onSalvar: async () => {
       limparErroInline();
-      
+
       const novoTitulo = $('modalTituloTransacao')?.value?.trim();
       const novoValor = Number($('modalValorTransacao')?.value);
       const novoTipo = $('modalTipoTransacao')?.value;

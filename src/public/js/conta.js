@@ -167,7 +167,7 @@ window.editarConta = async (id) => {
     `,
     onSalvar: async () => {
       limparErroInline();
-      
+
       const novoNome = $('modalNomeConta')?.value;
       const novoTipo = $('modalTipoConta')?.value;
 
@@ -323,4 +323,3 @@ window.transferirDaConta = async (contaOrigemId) => {
     },
   });
 };
-
