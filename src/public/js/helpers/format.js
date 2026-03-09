@@ -4,6 +4,14 @@ export function formatarValor(valor) {
   return num.toFixed(2);
 }
 
+// Formata valor como moeda brasileira (R$)
+export function formatarMoeda(valor) {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(Number(valor || 0));
+}
+
 // Soma valores numericos de uma lista usando campo padrao ou funcao de mapeamento
 export function calcularTotalItens(lista = [], valorOuFn = 'valor') {
   const obterValor =
@@ -53,4 +61,16 @@ export function formatarData(data) {
   if (Number.isNaN(dataObj.getTime())) return '-';
 
   return dataObj.toLocaleDateString('pt-BR');
+}
+
+// Formata hora de uma data (hh:mm)
+export function formatarHora(dataISO) {
+  if (!dataISO) return '-';
+
+  const data = new Date(dataISO);
+  if (Number.isNaN(data.getTime())) return '-';
+
+  const hora = String(data.getHours()).padStart(2, '0');
+  const minuto = String(data.getMinutes()).padStart(2, '0');
+  return `${hora}:${minuto}`;
 }

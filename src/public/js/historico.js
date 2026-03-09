@@ -1,0 +1,630 @@
+import { apiFetch } from './config.js';
+import {
+  $,
+  clearElement,
+  formatarData,
+  formatarHora,
+  formatarMoeda,
+  onEventById,
+  showElement,
+  hideElement,
+  escaparHtml,
+  criarPaginacao,
+} from './helpers/index.js';
+import { mostrarNotificacao } from './notification.js';
+
+// Estado da aplicação
+let state = {
+  historicos: [],
+  filtros: {
+    entidade: '',
+    acao: '',
+  },
+};
+
+const paginacaoHistorico = criarPaginacao({
+  containerId: 'pagination',
+  prevButtonId: 'btn-anterior',
+  nextButtonId: 'btn-proximo',
+  infoId: 'page-info',
+  limit: 20,
+  onChange: async () => {
+    await carregarHistorico();
+  },
+});
+
+// Inicialização
+document.addEventListener('DOMContentLoaded', () => {
+  inicializarEventos();
+  carregarHistorico();
+});
+
+function inicializarEventos() {
+  onEventById('btn-aplicar-filtros', 'click', aplicarFiltros);
+  onEventById('btn-limpar-filtros', 'click', limparFiltros);
+  paginacaoHistorico.init();
+
+  // Delegação para botões de desfazer adicionados dinamicamente
+  onEventById('historico-lista', 'click', async (event) => {
+    const btn = event.target.closest('.btn-desfazer[data-historico-id]');
+    if (btn) {
+      await desfazerAcao(btn.dataset.historicoId);
+      return;
+    }
+
+    // Toggle de dropdown de alterações
+    const toggleBtn = event.target.closest('.alteracoes-toggle');
+    if (toggleBtn) {
+      toggleDropdownAlteracoes(toggleBtn);
+    }
+  });
+}
+
+// Funções de API
+async function carregarHistorico() {
+  try {
+    mostrarLoading(true);
+
+    const { entidade, acao } = state.filtros;
+    const { skip, limit } = paginacaoHistorico.getParams();
+
+    const params = new URLSearchParams({
+      skip: skip.toString(),
+      limit: limit.toString(),
+    });
+
+    if (entidade) params.append('entidade', entidade);
+    if (acao) params.append('acao', acao);
+
+    const resultado = await apiFetch(
+      `${window.location.origin}/historico?${params}`
+    );
+
+    state.historicos = resultado.data || [];
+    const total = resultado.pagination?.total || 0;
+    const paginaAjustada = paginacaoHistorico.setTotal(total);
+
+    if (paginaAjustada) {
+      await paginacaoHistorico.notificarMudanca();
+      return;
+    }
+
+    renderizarHistorico();
+  } catch (error) {
+    console.error('Erro ao carregar histórico:', error);
+    mostrarNotificacao('Erro ao carregar histórico', 'erro');
+  } finally {
+    mostrarLoading(false);
+  }
+}
+
+// Renderização
+function renderizarHistorico() {
+  const lista = $('historico-lista');
+  const emptyState = $('empty-state');
+
+  if (!lista) return;
+
+  clearElement(lista);
+
+  if (state.historicos.length === 0) {
+    hideElement(lista);
+    showElement(emptyState);
+    return;
+  }
+
+  showElement(lista);
+  hideElement(emptyState);
+
+  state.historicos.forEach((historico) => {
+    const item = criarItemHistorico(historico);
+    lista.appendChild(item);
+  });
+}
+
+function criarItemHistorico(historico) {
+  const div = document.createElement('div');
+  div.className = `historico-item acao-${historico.acao}`;
+  div.dataset.historicoId = historico._id;
+
+  if (historico.desfeito) {
+    div.classList.add('historico-desfeito');
+  }
+
+  const dataFormatada = formatarData(historico.createdAt);
+  const horaFormatada = formatarHora(historico.createdAt);
+
+  const entidadeLabel = traduzirEntidade(historico.entidade);
+  const acaoLabel = traduzirAcao(historico.acao);
+
+  const btnDesfazer = !historico.desfeito
+    ? `<button class="btn-desfazer" data-historico-id="${historico._id}">
+         <i class="fa-solid fa-rotate-left"></i> Desfazer
+       </button>`
+    : '<span class="badge-desfeito">Desfeito</span>';
+
+  const detalhesEdicaoHtml = gerarDetalhesEdicao(historico);
+
+  div.innerHTML = `
+    <div class="historico-item-header">
+      <div class="historico-item-info">
+        <div class="historico-descricao">${escaparHtml(historico.descricao || '')}</div>
+        <div class="historico-meta">
+          <span>${dataFormatada} às ${horaFormatada}</span>
+        </div>
+      </div>
+      <div class="historico-actions">
+        <span class="historico-badge badge-${historico.acao}">${acaoLabel}</span>
+        <span class="historico-badge badge-entidade">${entidadeLabel}</span>
+        ${btnDesfazer}
+      </div>
+    </div>
+    ${detalhesEdicaoHtml}
+  `;
+
+  return div;
+}
+
+const CAMPOS_OCULTOS_ALTERACAO = new Set([
+  '_id',
+  '__v',
+  'createdAt',
+  'updatedAt',
+  'usuario',
+]);
+
+const LABEL_CAMPO_ALTERACAO = {
+  titulo: 'Título',
+  valor: 'Valor',
+  tipo: 'Tipo',
+  categoria: 'Categoria',
+  conta: 'Conta',
+  status: 'Status',
+  tipoDespesa: 'Tipo de despesa',
+  recorrencia: 'Recorrência',
+  fonteSaldo: 'Origem do saldo',
+  tags: 'Tags',
+  data: 'Data',
+  'parcelamento.totalParcelas': 'Total de parcelas',
+  'parcelamento.parcelaAtual': 'Parcela atual',
+  ativa: 'Ativa',
+  saldo: 'Saldo',
+  nome: 'Nome',
+};
+
+// Renderiza o bloco de "Antes/Depois" apenas para ações de edição.
+function gerarDetalhesEdicao(historico) {
+  if (historico.acao !== 'edicao') {
+    return '';
+  }
+
+  const alteracoes = calcularAlteracoes(
+    historico.dadosAnteriores,
+    historico.dadosNovos
+  );
+
+  if (alteracoes.length === 0) {
+    return '';
+  }
+
+  const itensHtml = alteracoes
+    .map((alteracao) => {
+      return `
+        <div class="alteracao-item">
+          <div class="alteracao-campo">${escaparHtml(alteracao.campo)}</div>
+          <div class="alteracao-valores">
+            <span class="alteracao-antes">Antes: ${escaparHtml(alteracao.antes)}</span>
+            <span class="alteracao-depois">Depois: ${escaparHtml(alteracao.depois)}</span>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+
+  const quantidadeAlteracoes = alteracoes.length;
+  const textoAlteracoes =
+    quantidadeAlteracoes === 1
+      ? '1 campo alterado'
+      : `${quantidadeAlteracoes} campos alterados`;
+
+  return `
+    <div class="historico-alteracoes">
+      <button class="alteracoes-toggle" type="button">
+        <i class="fa-solid fa-chevron-right alteracoes-icone"></i>
+        <span class="alteracoes-label">Ver alterações (${textoAlteracoes})</span>
+      </button>
+      <div class="alteracoes-conteudo" style="display: none;">
+        ${itensHtml}
+      </div>
+    </div>
+  `;
+}
+
+function toggleDropdownAlteracoes(toggleBtn) {
+  const container = toggleBtn.closest('.historico-alteracoes');
+  if (!container) return;
+
+  const conteudo = container.querySelector('.alteracoes-conteudo');
+  const icone = container.querySelector('.alteracoes-icone');
+  const label = container.querySelector('.alteracoes-label');
+
+  if (!conteudo) return;
+
+  const isVisible = conteudo.style.display !== 'none';
+
+  atualizarEstadoDropdownAlteracoes({
+    conteudo,
+    icone,
+    label,
+    aberto: !isVisible,
+  });
+}
+
+function extrairResumoAlteracoes(labelText = '') {
+  const match = labelText.match(/\((\d+ campos? alterados?)\)/);
+  return match ? match[1] : '';
+}
+
+function atualizarEstadoDropdownAlteracoes({ conteudo, icone, label, aberto }) {
+  if (!conteudo) return;
+
+  conteudo.style.display = aberto ? 'block' : 'none';
+  icone?.classList.toggle('alteracoes-icone-aberto', aberto);
+
+  const resumo = extrairResumoAlteracoes(label?.textContent || '');
+  if (!resumo || !label) return;
+
+  label.textContent = aberto
+    ? `Ocultar alterações (${resumo})`
+    : `Ver alterações (${resumo})`;
+}
+
+function calcularAlteracoes(dadosAnteriores = {}, dadosNovos = {}) {
+  // Achata objetos para comparar campos aninhados com a mesma estrutura de chave.
+  const antes = achatarObjeto(dadosAnteriores);
+  const depois = achatarObjeto(dadosNovos);
+
+  const chaves = new Set([...Object.keys(antes), ...Object.keys(depois)]);
+  const alteracoes = [];
+
+  chaves.forEach((chave) => {
+    const ultimaParte = chave.split('.').pop();
+    if (CAMPOS_OCULTOS_ALTERACAO.has(ultimaParte)) {
+      return;
+    }
+
+    const valorAntes = normalizarValorCampoAlteracao(
+      chave,
+      antes[chave],
+      dadosAnteriores,
+      dadosNovos
+    );
+    const valorDepois = normalizarValorCampoAlteracao(
+      chave,
+      depois[chave],
+      dadosNovos,
+      dadosAnteriores
+    );
+
+    if (valoresIguais(valorAntes, valorDepois)) {
+      return;
+    }
+
+    alteracoes.push({
+      campo: nomeCampo(chave),
+      antes: formatarValorAlteracao(chave, valorAntes),
+      depois: formatarValorAlteracao(chave, valorDepois),
+    });
+  });
+
+  return alteracoes;
+}
+
+function normalizarValorCampoAlteracao(
+  chave,
+  valor,
+  snapshotAtual,
+  snapshotOutro
+) {
+  // Para categoria/conta, tenta resolver ID para nome usando ambos snapshots.
+  if (!ehCampoReferencia(chave)) {
+    return valor;
+  }
+
+  const nomeDireto = extrairNomeLegivel(valor);
+  if (nomeDireto) {
+    return nomeDireto;
+  }
+
+  const id = extrairIdReferencia(valor);
+  if (!id) {
+    return valor;
+  }
+
+  const valorMesmoSnapshot = obterValorPorCaminho(snapshotAtual, chave);
+  const nomeMesmoSnapshot = extrairNomePorId(valorMesmoSnapshot, id);
+  if (nomeMesmoSnapshot) {
+    return nomeMesmoSnapshot;
+  }
+
+  const valorOutroSnapshot = obterValorPorCaminho(snapshotOutro, chave);
+  const nomeOutroSnapshot = extrairNomePorId(valorOutroSnapshot, id);
+  if (nomeOutroSnapshot) {
+    return nomeOutroSnapshot;
+  }
+
+  return valor;
+}
+
+function ehCampoReferencia(chave) {
+  const ultimaParte = chave.split('.').pop();
+  return ultimaParte === 'categoria' || ultimaParte === 'conta';
+}
+
+function extrairIdReferencia(valor) {
+  if (!valor) {
+    return null;
+  }
+
+  if (typeof valor === 'string' && /^[a-f0-9]{24}$/i.test(valor)) {
+    return valor;
+  }
+
+  if (
+    typeof valor === 'object' &&
+    Object.prototype.hasOwnProperty.call(valor, '_id')
+  ) {
+    return String(valor._id);
+  }
+
+  return null;
+}
+
+// Extrai um texto legível de objetos populados usados em campos de referência.
+function extrairNomeLegivel(valor) {
+  if (!valor || typeof valor !== 'object') {
+    return null;
+  }
+
+  const nome = valor.nome || valor.titulo || valor.descricao;
+  return nome ? String(nome) : null;
+}
+
+function extrairNomePorId(valor, idEsperado) {
+  if (!valor || typeof valor !== 'object') {
+    return null;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(valor, '_id')) {
+    return extrairNomeLegivel(valor);
+  }
+
+  const idValor = String(valor._id);
+  if (idValor !== idEsperado) {
+    return null;
+  }
+
+  return extrairNomeLegivel(valor);
+}
+
+function obterValorPorCaminho(obj, caminho) {
+  if (!obj || typeof obj !== 'object') {
+    return undefined;
+  }
+
+  return caminho
+    .split('.')
+    .reduce((acumulador, parte) => acumulador?.[parte], obj);
+}
+
+function achatarObjeto(obj, prefixo = '') {
+  if (!obj || typeof obj !== 'object') {
+    return {};
+  }
+
+  const resultado = {};
+
+  Object.entries(obj).forEach(([chave, valor]) => {
+    const caminho = prefixo ? `${prefixo}.${chave}` : chave;
+
+    if (valor instanceof Date || Array.isArray(valor) || valor === null) {
+      resultado[caminho] = valor;
+      return;
+    }
+
+    if (typeof valor === 'object') {
+      // Quando vier documento populado, prioriza campo legível para exibição
+      if (Object.prototype.hasOwnProperty.call(valor, '_id')) {
+        resultado[caminho] =
+          valor.nome || valor.titulo || valor.descricao || valor._id;
+        return;
+      }
+
+      if (Object.keys(valor).length === 0) {
+        resultado[caminho] = valor;
+        return;
+      }
+
+      Object.assign(resultado, achatarObjeto(valor, caminho));
+      return;
+    }
+
+    resultado[caminho] = valor;
+  });
+
+  return resultado;
+}
+
+function valoresIguais(a, b) {
+  return (
+    JSON.stringify(normalizarValorComparacao(a)) ===
+    JSON.stringify(normalizarValorComparacao(b))
+  );
+}
+
+function normalizarValorComparacao(valor) {
+  // Normaliza tipos para evitar falso positivo de diferença (Date/ObjectId).
+  if (valor instanceof Date) {
+    return valor.toISOString();
+  }
+
+  if (Array.isArray(valor)) {
+    return valor.map(normalizarValorComparacao);
+  }
+
+  if (valor && typeof valor === 'object') {
+    if (Object.prototype.hasOwnProperty.call(valor, '_id')) {
+      return valor._id;
+    }
+
+    return valor;
+  }
+
+  return valor;
+}
+
+function nomeCampo(chave) {
+  if (LABEL_CAMPO_ALTERACAO[chave]) {
+    return LABEL_CAMPO_ALTERACAO[chave];
+  }
+
+  const ultimaParte = chave.split('.').pop() || chave;
+  if (LABEL_CAMPO_ALTERACAO[ultimaParte]) {
+    return LABEL_CAMPO_ALTERACAO[ultimaParte];
+  }
+
+  return ultimaParte
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (letra) => letra.toUpperCase())
+    .trim();
+}
+
+function formatarValorAlteracao(chave, valor) {
+  if (valor === undefined || valor === null || valor === '') {
+    return '-';
+  }
+
+  if (Array.isArray(valor)) {
+    return valor.length ? valor.join(', ') : '-';
+  }
+
+  if (typeof valor === 'boolean') {
+    return valor ? 'Sim' : 'Não';
+  }
+
+  if (typeof valor === 'number') {
+    if (chave.includes('valor') || chave.includes('saldo')) {
+      return formatarMoeda(valor);
+    }
+
+    return String(valor);
+  }
+
+  if (typeof valor === 'string' && chave.includes('data')) {
+    const data = new Date(valor);
+    if (!Number.isNaN(data.getTime())) {
+      return formatarData(data);
+    }
+  }
+
+  if (typeof valor === 'object') {
+    if (valor.nome || valor.titulo || valor.descricao) {
+      return String(valor.nome || valor.titulo || valor.descricao);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(valor, '_id')) {
+      return String(valor._id);
+    }
+
+    return JSON.stringify(valor);
+  }
+
+  return String(valor);
+}
+
+// Traduções usadas nos badges da UI.
+function traduzirEntidade(entidade) {
+  const traducoes = {
+    transacao: 'Transação',
+    conta: 'Conta',
+    carteira: 'Carteira',
+    salario: 'Salário',
+    listaDesejo: 'Lista de Desejo',
+  };
+  return traducoes[entidade] || entidade;
+}
+
+function traduzirAcao(acao) {
+  const traducoes = {
+    criacao: 'Criação',
+    edicao: 'Edição',
+    delecao: 'Deleção',
+    transferencia: 'Transferência',
+    realizacao: 'Realização',
+  };
+  return traducoes[acao] || acao;
+}
+
+// Filtros
+function aplicarFiltros() {
+  const filtroEntidade = $('filtro-entidade');
+  const filtroAcao = $('filtro-acao');
+
+  state.filtros.entidade = filtroEntidade?.value || '';
+  state.filtros.acao = filtroAcao?.value || '';
+  paginacaoHistorico.resetar();
+  carregarHistorico();
+}
+
+function limparFiltros() {
+  const filtroEntidade = $('filtro-entidade');
+  const filtroAcao = $('filtro-acao');
+
+  if (filtroEntidade) filtroEntidade.value = '';
+  if (filtroAcao) filtroAcao.value = '';
+
+  state.filtros = { entidade: '', acao: '' };
+  paginacaoHistorico.resetar();
+  carregarHistorico();
+}
+
+// Loading
+function mostrarLoading(mostrar) {
+  const loading = $('loading');
+  const lista = $('historico-lista');
+
+  if (mostrar) {
+    showElement(loading);
+    hideElement(lista);
+    return;
+  }
+
+  hideElement(loading);
+}
+
+// Desfazer ação
+async function desfazerAcao(historicoId) {
+  if (!confirm('Tem certeza que deseja desfazer esta ação?')) {
+    return;
+  }
+
+  try {
+    const resultado = await apiFetch(
+      `${window.location.origin}/historico/${historicoId}/desfazer`,
+      {
+        method: 'POST',
+      }
+    );
+
+    mostrarNotificacao(
+      resultado.message || 'Ação desfeita com sucesso',
+      'sucesso'
+    );
+
+    // Recarrega lista e estado visual após reversão.
+    await carregarHistorico();
+  } catch (error) {
+    console.error('Erro ao desfazer ação:', error);
+    mostrarNotificacao(error.message || 'Erro ao desfazer ação', 'erro');
+  }
+}

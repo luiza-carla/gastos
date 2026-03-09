@@ -2,6 +2,8 @@ const cron = require('node-cron');
 const Transacao = require('../models/Transacao');
 const Categoria = require('../models/Categoria');
 const Conta = require('../models/Conta');
+const Carteira = require('../models/Carteira');
+const { formatarMoeda } = require('../utils/stringHelpers');
 
 // Serviço responsável por agendar e processar salários automaticamente
 class SalarioScheduler {
@@ -52,13 +54,16 @@ class SalarioScheduler {
         ativa: true,
         frequencia: 'mensal',
         diaRecebimento: diaAtual,
-        conta: { $exists: true, $ne: null },
+        $or: [
+          { fonteSaldo: 'carteira' },
+          { conta: { $exists: true, $ne: null } },
+        ],
       })
         .populate('usuario')
         .populate('conta');
 
       if (salarios.length === 0) {
-        console.log(`ℹNenhum salário para processar no dia ${diaAtual}`);
+        console.log(`Nenhum salário para processar no dia ${diaAtual}`);
         return;
       }
 
@@ -79,20 +84,37 @@ class SalarioScheduler {
             continue;
           }
 
-          // Atualiza o saldo da conta
-          const conta = await Conta.findById(salario.conta._id);
-          if (conta) {
+          if (salario.fonteSaldo === 'carteira') {
+            await Carteira.updateOne(
+              { usuario: salario.usuario._id },
+              { $inc: { saldo: Number(salario.valor) } },
+              { upsert: true }
+            );
+          } else {
+            // Atualiza o saldo da conta
+            const conta = salario.conta
+              ? await Conta.findById(salario.conta._id)
+              : null;
+
+            if (!conta) {
+              console.log(
+                `Salário ${salario._id} sem conta válida para processamento`
+              );
+              continue;
+            }
+
             conta.saldo += salario.valor;
             await conta.save();
           }
 
           // Atualiza a data de último processamento
           salario.dataUltimoProcessamento = hoje;
+          salario.status = 'pago';
           await salario.save();
 
           processados++;
           console.log(
-            `Salário processado: R$ ${salario.valor} para usuário ${salario.usuario._id}`
+            `Salário processado: ${formatarMoeda(salario.valor)} para usuário ${salario.usuario._id}`
           );
         } catch (erro) {
           erros++;

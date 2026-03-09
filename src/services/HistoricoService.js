@@ -1,0 +1,504 @@
+const Historico = require('../models/Historico');
+const Transacao = require('../models/Transacao');
+const Conta = require('../models/Conta');
+const Carteira = require('../models/Carteira');
+const ListaDesejo = require('../models/ListaDesejo');
+const { conjugarAcao, formatarMoeda } = require('../utils/stringHelpers');
+const { criarErro } = require('../utils/errorHelpers');
+const {
+  salarioJaProcessadoNoMes,
+  extrairDestinoSaldo,
+} = require('../utils/salarioHelpers');
+const {
+  formatarDescricaoHistoricoPadrao,
+} = require('../utils/historicoDescricao');
+
+class HistoricoService {
+  static _garantirDadosAnteriores(dadosAnteriores) {
+    if (!dadosAnteriores) {
+      throw criarErro(400, 'Dados anteriores não disponíveis');
+    }
+  }
+
+  static async _reverterCrudBasico(Model, acao, entidadeId, dadosAnteriores) {
+    switch (acao) {
+      case 'criacao':
+        await Model.findByIdAndDelete(entidadeId);
+        break;
+      case 'edicao':
+        this._garantirDadosAnteriores(dadosAnteriores);
+        await Model.findByIdAndUpdate(entidadeId, dadosAnteriores);
+        break;
+      case 'delecao':
+        this._garantirDadosAnteriores(dadosAnteriores);
+        await Model.create(dadosAnteriores);
+        break;
+      default:
+        break;
+    }
+  }
+
+  static async _restaurarSaldoConta(usuarioId, contaId, saldo) {
+    await Conta.updateOne(
+      { _id: contaId, usuario: usuarioId },
+      { $set: { saldo } }
+    );
+  }
+
+  static async _ajustarSaldoCarteira(usuarioId, delta) {
+    await Carteira.updateOne(
+      { usuario: usuarioId },
+      { $inc: { saldo: delta } }
+    );
+  }
+
+  static async _ajustarSaldoConta(usuarioId, contaId, delta) {
+    await Conta.updateOne(
+      { _id: contaId, usuario: usuarioId },
+      { $inc: { saldo: delta } }
+    );
+  }
+
+  static async _restaurarSaldoCarteira(usuarioId, saldo) {
+    await Carteira.updateOne({ usuario: usuarioId }, { $set: { saldo } });
+  }
+
+  // Extrai metadados úteis da requisição
+  static extrairMetadata(req) {
+    if (!req) return {};
+
+    return {
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    };
+  }
+
+  // Registra uma ação no histórico
+  static async registrar(dados) {
+    try {
+      const descricao = formatarDescricaoHistoricoPadrao(
+        dados.acao,
+        dados.entidade
+      );
+
+      const historico = new Historico({
+        usuario: dados.usuario,
+        entidade: dados.entidade,
+        entidadeId: dados.entidadeId,
+        acao: dados.acao,
+        descricao,
+        dadosAnteriores: dados.dadosAnteriores || null,
+        dadosNovos: dados.dadosNovos || null,
+        metadata: dados.metadata || {},
+      });
+
+      await historico.save();
+      return historico;
+    } catch (error) {
+      console.error('Erro ao registrar histórico:', error);
+      // Não lançamos erro para não interromper a operação principal
+      return null;
+    }
+  }
+
+  // Busca histórico do usuário
+  static async buscarPorUsuario(usuarioId, filtros = {}) {
+    const query = { usuario: usuarioId };
+
+    if (filtros.entidade) {
+      query.entidade = filtros.entidade;
+    }
+
+    if (filtros.entidadeId) {
+      query.entidadeId = filtros.entidadeId;
+    }
+
+    if (filtros.acao) {
+      query.acao = filtros.acao;
+    }
+
+    const limit = filtros.limit || 50;
+    const skip = filtros.skip || 0;
+
+    const historicos = await Historico.find(query)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .skip(skip)
+      .lean();
+
+    const historicosNormalizados = historicos.map((historico) => ({
+      ...historico,
+      descricao: formatarDescricaoHistoricoPadrao(
+        historico.acao,
+        historico.entidade
+      ),
+    }));
+
+    const total = await Historico.countDocuments(query);
+
+    return {
+      historicos: historicosNormalizados,
+      total,
+      limit,
+      skip,
+    };
+  }
+
+  // Busca histórico de uma entidade específica
+  static async buscarPorEntidade(entidade, entidadeId) {
+    const historicos = await Historico.find({
+      entidade,
+      entidadeId,
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return historicos.map((historico) => ({
+      ...historico,
+      descricao: formatarDescricaoHistoricoPadrao(
+        historico.acao,
+        historico.entidade
+      ),
+    }));
+  }
+
+  // Limpa histórico antigo (mais de X dias)
+  static async limparAntigo(dias = 90) {
+    const dataLimite = new Date();
+    dataLimite.setDate(dataLimite.getDate() - dias);
+
+    const resultado = await Historico.deleteMany({
+      createdAt: { $lt: dataLimite },
+    });
+
+    return resultado.deletedCount;
+  }
+
+  // Formata descrição para transação
+  static formatarDescricaoTransacao(acao, transacao) {
+    const tipo = transacao.tipo === 'entrada' ? 'Entrada' : 'Saída';
+    const valor = formatarMoeda(transacao.valor);
+
+    switch (acao) {
+      case 'criacao':
+        return `${tipo} criada: ${transacao.titulo} (${valor})`;
+      case 'edicao':
+        return `${tipo} editada: ${transacao.titulo} (${valor})`;
+      case 'delecao':
+        return `${tipo} deletada: ${transacao.titulo} (${valor})`;
+      default:
+        return `Ação em ${transacao.titulo}`;
+    }
+  }
+
+  // Formata descrição para conta
+  static formatarDescricaoConta(acao, conta) {
+    switch (acao) {
+      case 'criacao':
+        return `Conta criada: ${conta.nome}`;
+      case 'edicao':
+        return `Conta editada: ${conta.nome}`;
+      case 'delecao':
+        return `Conta deletada: ${conta.nome}`;
+      default:
+        return `Ação em conta ${conta.nome}`;
+    }
+  }
+
+  // Formata descrição de transferência entre contas
+  static formatarDescricaoTransferenciaConta(contaOrigem, contaDestino, valor) {
+    return `Transferência entre contas: ${contaOrigem.nome} -> ${contaDestino.nome} (${formatarMoeda(valor)})`;
+  }
+
+  // Formata descrição de transferência entre carteira e conta
+  static formatarDescricaoTransferenciaCarteira(conta, valor, direcao) {
+    if (direcao === 'carteira-para-conta') {
+      return `Transferência carteira -> conta: ${conta.nome} (${formatarMoeda(valor)})`;
+    }
+
+    return `Transferência conta -> carteira: ${conta.nome} (${formatarMoeda(valor)})`;
+  }
+
+  // Desfaz uma ação do histórico
+  static async desfazer(historicoId, usuarioId) {
+    // Busca o registro de histórico
+    const historico = await Historico.findOne({
+      _id: historicoId,
+      usuario: usuarioId,
+    });
+
+    if (!historico) {
+      throw criarErro(404, 'Registro de histórico não encontrado');
+    }
+
+    if (historico.desfeito) {
+      throw criarErro(409, 'Esta ação já foi desfeita');
+    }
+
+    // Reverte a ação dependendo do tipo
+    try {
+      await this._reverterAcao(historico);
+
+      // Marca como desfeito
+      historico.desfeito = true;
+      historico.desfeitoEm = new Date();
+      await historico.save();
+
+      return { success: true, message: 'Ação desfeita com sucesso' };
+    } catch (error) {
+      console.error('Erro ao desfazer ação:', error);
+      const status = error.statusCode || error.status || 500;
+      const erro = criarErro(
+        status,
+        `Não foi possível desfazer: ${error.message}`
+      );
+      erro.cause = error;
+      throw erro;
+    }
+  }
+
+  // Reverte uma ação específica
+  static async _reverterAcao(historico) {
+    const { entidade, acao, entidadeId, dadosAnteriores, usuario } = historico;
+
+    switch (entidade) {
+      case 'transacao':
+        await this._reverterTransacao(acao, entidadeId, dadosAnteriores);
+        break;
+      case 'conta':
+        await this._reverterConta(acao, entidadeId, dadosAnteriores, usuario);
+        break;
+      case 'carteira':
+        await this._reverterCarteira(acao, dadosAnteriores, usuario);
+        break;
+      case 'salario':
+        await this._reverterSalario(
+          acao,
+          entidadeId,
+          dadosAnteriores,
+          historico.dadosNovos,
+          usuario,
+          historico.createdAt
+        );
+        break;
+      case 'listaDesejo':
+        await this._reverterListaDesejo(
+          acao,
+          entidadeId,
+          dadosAnteriores,
+          historico.dadosNovos,
+          usuario
+        );
+        break;
+      default:
+        throw criarErro(400, `Tipo de entidade não suportado: ${entidade}`);
+    }
+  }
+
+  // Reverte ação de transação
+  static async _reverterTransacao(acao, entidadeId, dadosAnteriores) {
+    await this._reverterCrudBasico(
+      Transacao,
+      acao,
+      entidadeId,
+      dadosAnteriores
+    );
+  }
+
+  // Reverte ação de conta
+  static async _reverterConta(acao, entidadeId, dadosAnteriores, usuarioId) {
+    switch (acao) {
+      case 'criacao':
+      case 'edicao':
+      case 'delecao':
+        await this._reverterCrudBasico(
+          Conta,
+          acao,
+          entidadeId,
+          dadosAnteriores
+        );
+        break;
+      case 'transferencia': {
+        this._garantirDadosAnteriores(dadosAnteriores);
+
+        const { contaOrigemId, contaDestinoId, saldoOrigem, saldoDestino } =
+          dadosAnteriores;
+
+        await this._restaurarSaldoConta(usuarioId, contaOrigemId, saldoOrigem);
+        await this._restaurarSaldoConta(
+          usuarioId,
+          contaDestinoId,
+          saldoDestino
+        );
+        break;
+      }
+    }
+  }
+
+  // Reverte ação de carteira
+  static async _reverterCarteira(acao, dadosAnteriores, usuarioId) {
+    if (acao !== 'transferencia') {
+      throw criarErro(400, `Ação não suportada para carteira: ${acao}`);
+    }
+
+    this._garantirDadosAnteriores(dadosAnteriores);
+
+    const { carteiraSaldo, contaId, contaSaldo } = dadosAnteriores;
+
+    await this._restaurarSaldoCarteira(usuarioId, carteiraSaldo);
+    await this._restaurarSaldoConta(usuarioId, contaId, contaSaldo);
+  }
+
+  static async _aplicarDeltaSalario(usuarioId, salario, sinal, dataReferencia) {
+    if (!salarioJaProcessadoNoMes(salario, dataReferencia)) {
+      return;
+    }
+
+    const valor = Number(salario?.valor || 0);
+    if (!valor) {
+      return;
+    }
+
+    const destino = extrairDestinoSaldo(salario);
+    const delta = valor * sinal;
+
+    if (destino.tipo === 'carteira') {
+      await this._ajustarSaldoCarteira(usuarioId, delta);
+      return;
+    }
+
+    if (destino.tipo === 'conta') {
+      await this._ajustarSaldoConta(usuarioId, destino.contaId, delta);
+    }
+  }
+
+  // Reverte ação de salário
+  static async _reverterSalario(
+    acao,
+    entidadeId,
+    dadosAnteriores,
+    dadosNovos,
+    usuarioId,
+    dataAcao
+  ) {
+    const dataReferencia = dataAcao ? new Date(dataAcao) : new Date();
+
+    switch (acao) {
+      case 'criacao':
+        await this._aplicarDeltaSalario(
+          usuarioId,
+          dadosNovos,
+          -1,
+          dataReferencia
+        );
+        await Transacao.findByIdAndDelete(entidadeId);
+        break;
+      case 'edicao':
+        this._garantirDadosAnteriores(dadosAnteriores);
+
+        // Inverte os deltas aplicados na edição e volta o documento para o estado anterior.
+        await this._aplicarDeltaSalario(
+          usuarioId,
+          dadosNovos,
+          -1,
+          dataReferencia
+        );
+        await this._aplicarDeltaSalario(
+          usuarioId,
+          dadosAnteriores,
+          1,
+          dataReferencia
+        );
+
+        await Transacao.findByIdAndUpdate(entidadeId, dadosAnteriores);
+        break;
+      case 'delecao':
+        this._garantirDadosAnteriores(dadosAnteriores);
+
+        await Transacao.create(dadosAnteriores);
+        await this._aplicarDeltaSalario(
+          usuarioId,
+          dadosAnteriores,
+          1,
+          dataReferencia
+        );
+        break;
+      default:
+        throw criarErro(400, `Ação não suportada para salário: ${acao}`);
+    }
+  }
+
+  // Reverte ação de lista de desejo
+  static async _reverterListaDesejo(
+    acao,
+    entidadeId,
+    dadosAnteriores,
+    dadosNovos,
+    usuarioId
+  ) {
+    switch (acao) {
+      case 'criacao':
+      case 'edicao':
+      case 'delecao':
+        await this._reverterCrudBasico(
+          ListaDesejo,
+          acao,
+          entidadeId,
+          dadosAnteriores
+        );
+        break;
+      case 'realizacao': {
+        this._garantirDadosAnteriores(dadosAnteriores);
+
+        const transacaoId = dadosNovos?.transacaoId;
+        const transacaoRealizada = transacaoId
+          ? await Transacao.findById(transacaoId)
+          : null;
+
+        // Reverte impacto no saldo para manter resumo consistente
+        if (transacaoRealizada?.status === 'pago') {
+          const valor = Number(transacaoRealizada.valor || 0);
+
+          if (transacaoRealizada.fonteSaldo === 'carteira') {
+            await this._ajustarSaldoCarteira(usuarioId, valor);
+          } else if (transacaoRealizada.conta) {
+            await this._ajustarSaldoConta(
+              usuarioId,
+              transacaoRealizada.conta,
+              valor
+            );
+          }
+        }
+
+        if (transacaoId) {
+          await Transacao.findByIdAndDelete(transacaoId);
+        }
+
+        const itemExistente = await ListaDesejo.findById(entidadeId);
+        if (!itemExistente) {
+          await ListaDesejo.create(dadosAnteriores);
+        }
+
+        break;
+      }
+    }
+  }
+
+  // Formata descrição genérica
+  static formatarDescricao(acao, entidade) {
+    const entidadeNome =
+      {
+        transacao: 'Transação',
+        conta: 'Conta',
+        carteira: 'Carteira',
+        salario: 'Salário',
+        listaDesejo: 'Lista de Desejo',
+      }[entidade] || entidade;
+
+    const acaoNome = conjugarAcao(acao, entidade);
+
+    return `${entidadeNome} ${acaoNome}`;
+  }
+}
+
+module.exports = HistoricoService;

@@ -29,6 +29,7 @@ import {
   inicializarEditorTags,
   resetarTagsFormulario,
   setupCategoriaAutocomplete,
+  criarPaginacao,
 } from './helpers/index.js';
 
 // Array para armazenar tags temporárias do formulário
@@ -37,9 +38,23 @@ let tags = [];
 const URL_LISTA_DESEJOS = `${window.location.origin}/lista-desejos`;
 const URL_CATEGORIAS = `${window.location.origin}/categorias`;
 const URL_CONTAS = `${window.location.origin}/contas`;
-const URL_TRANSACOES = `${window.location.origin}/transacoes`;
 const FORM_ERRO_ID = 'formErroInlineListaDesejo';
 const FORM_MSG_ERRO_ID = 'formMensagemErroListaDesejo';
+
+const stateDesejos = {
+  itens: [],
+};
+
+const paginacaoDesejos = criarPaginacao({
+  containerId: 'paginationDesejos',
+  prevButtonId: 'btnAnteriorDesejos',
+  nextButtonId: 'btnProximoDesejos',
+  infoId: 'pageInfoDesejos',
+  limit: 10,
+  onChange: async () => {
+    renderizarPaginaDesejos();
+  },
+});
 
 async function carregarDesejos() {
   return apiFetch(URL_LISTA_DESEJOS);
@@ -127,10 +142,21 @@ export async function listarDesejos() {
   if (!container) return;
 
   const desejos = await carregarDesejos();
-  const total = calcularTotalItens(desejos);
+  stateDesejos.itens = desejos || [];
+
+  const total = calcularTotalItens(stateDesejos.itens);
 
   setTextById('totalDesejos', `R$ ${formatarValor(total)}`);
-  setHTMLById('listaDesejos', criarCardsHTML(desejos, criarCardDesejo));
+  renderizarPaginaDesejos();
+}
+
+function renderizarPaginaDesejos() {
+  const { skip, limit } = paginacaoDesejos.getParams();
+  const totalItens = stateDesejos.itens.length;
+  const itensPagina = stateDesejos.itens.slice(skip, skip + limit);
+
+  setHTMLById('listaDesejos', criarCardsHTML(itensPagina, criarCardDesejo));
+  paginacaoDesejos.setTotal(totalItens);
 }
 
 // Cria HTML de um card de desejo para exibicao na lista
@@ -378,30 +404,15 @@ window.realizarDesejo = async (id) => {
       }
 
       try {
-        // Cria a transacao com dados do desejo
-        await apiFetch(URL_TRANSACOES, {
+        // Realiza desejo em endpoint único (cria transação + remove desejo)
+        await apiFetch(`${URL_LISTA_DESEJOS}/${id}/realizar`, {
           method: 'POST',
           body: JSON.stringify({
-            titulo: desejo.titulo,
-            valor,
-            tipo: 'saida',
             conta,
-            categoria: desejo.categoria?._id,
+            valor,
             status,
             data: data || new Date().toISOString(),
-            tags: desejo.tags || [],
-            tipoDespesa: desejo.tipoDespesa,
-            recorrencia: 'nenhuma',
-            parcelamento: {
-              totalParcelas: 1,
-              parcelaAtual: 1,
-            },
           }),
-        });
-
-        // Remove o desejo da lista apos conversao bem-sucedida
-        await apiFetch(`${URL_LISTA_DESEJOS}/${id}`, {
-          method: 'DELETE',
         });
 
         fecharModal();
@@ -433,6 +444,8 @@ window.deletarDesejo = async (id) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  paginacaoDesejos.init();
+
   if ($('formListaDesejo')) {
     inicializarTags(tags);
   }

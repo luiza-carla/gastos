@@ -2,6 +2,10 @@
 <html>
   <head>
     <title>Login</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
     <link rel="stylesheet" href="../css/style.css" />
     <link rel="stylesheet" href="../css/modal.css" />
     <link rel="stylesheet" href="../css/auth.css" />
@@ -19,7 +23,18 @@
 
         <div class="form-group">
           <label for="loginSenha">Senha</label>
-          <input id="loginSenha" type="password" required />
+          <div class="password-field">
+            <input id="loginSenha" type="password" required />
+            <button
+              type="button"
+              class="password-toggle"
+              data-target="loginSenha"
+              aria-label="Mostrar senha"
+              aria-pressed="false"
+            >
+              <i class="fa-regular fa-eye" aria-hidden="true"></i>
+            </button>
+          </div>
         </div>
 
         <button type="submit">Login</button>

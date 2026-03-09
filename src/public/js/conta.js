@@ -218,13 +218,16 @@ export async function popularSelectContas(selectId = 'conta') {
 
   const contas = await buscarContas();
 
-  const placeholderTexto = 'Selecione a conta';
+  const placeholderTexto =
+    selectId === 'conta' || selectId === 'contaSalario'
+      ? 'Selecione a conta ou carteira'
+      : 'Selecione a conta';
   const placeholderAttrs =
     selectId === 'contaSalario' ? 'selected' : 'selected disabled';
 
   select.innerHTML = `<option value="" ${placeholderAttrs}>${placeholderTexto}</option>`;
 
-  if (selectId === 'conta') {
+  if (selectId === 'conta' || selectId === 'contaSalario') {
     select.innerHTML += criarOpcao(
       VALOR_CARTEIRA,
       'Carteira (dinheiro físico)'

@@ -62,6 +62,8 @@ async function abrirProjecao() {
 
 // Carrega listeners quando DOM estiver pronto
 document.addEventListener('DOMContentLoaded', () => {
+  carregarResumo();
+
   const btn = $('btnProjecao');
   const fechar = $('fecharModal');
 

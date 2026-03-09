@@ -135,3 +135,30 @@ export function criarBotoesAcao(acoes) {
     )
     .join('');
 }
+
+// Configura botão de mostrar/ocultar senha para um input
+export function configurarToggleSenha(inputId) {
+  const senhaInput = $(inputId);
+  const toggleBtn = document.querySelector(
+    `.password-toggle[data-target="${inputId}"]`
+  );
+
+  if (!toggleBtn || !senhaInput) return;
+
+  toggleBtn.addEventListener('click', () => {
+    const visivel = senhaInput.type === 'text';
+    senhaInput.type = visivel ? 'password' : 'text';
+
+    const icone = toggleBtn.querySelector('i');
+    if (icone) {
+      icone.classList.toggle('fa-eye', visivel);
+      icone.classList.toggle('fa-eye-slash', !visivel);
+    }
+
+    toggleBtn.setAttribute('aria-pressed', String(!visivel));
+    toggleBtn.setAttribute(
+      'aria-label',
+      visivel ? 'Mostrar senha' : 'Ocultar senha'
+    );
+  });
+}

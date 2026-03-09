@@ -1,6 +1,28 @@
 const Transacao = require('../models/Transacao');
 const Categoria = require('../models/Categoria');
 const Conta = require('../models/Conta');
+const Carteira = require('../models/Carteira');
+const HistoricoService = require('../services/HistoricoService');
+const { formatarMoeda } = require('../utils/stringHelpers');
+const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
+const {
+  salarioJaProcessadoNoMes,
+  extrairContaId,
+  extrairDestinoSaldo,
+} = require('../utils/salarioHelpers');
+
+const MENSAGEM_CATEGORIA_SALARIO_NAO_ENCONTRADA =
+  'Categoria Salário não encontrada';
+const MENSAGEM_SALARIO_NAO_ENCONTRADO = 'Salário não encontrado';
+
+function montarDescricaoHistoricoSalario(acao, salario) {
+  const descricaoBase = HistoricoService.formatarDescricao(acao, 'salario');
+  return `${descricaoBase}: ${salario.titulo} - ${formatarMoeda(salario.valor)}`;
+}
+
+function aplicarPopulacaoSalario(query) {
+  return query.populate('conta', 'nome tipo').populate('categoria', 'nome');
+}
 
 class SalarioController {
   constructor() {
@@ -10,34 +32,45 @@ class SalarioController {
     this.deletar = this.deletar.bind(this);
   }
 
-  // Obtém primeira data do mês para uma data de referência
-  obterInicioMes(dataReferencia = new Date()) {
-    return new Date(
-      dataReferencia.getFullYear(),
-      dataReferencia.getMonth(),
-      1,
-      0,
-      0,
-      0,
-      0
-    );
+  // Busca categoria Salário
+  async buscarCategoriaSalario() {
+    return Categoria.findOne({ nome: 'Salário' });
   }
 
-  // Verifica se salário já foi processado no mês atual
-  salarioJaProcessadoNoMes(salario, dataReferencia = new Date()) {
-    if (!salario || !salario.dataUltimoProcessamento) {
-      return false;
+  // Retorna categoria Salário ou responde erro 400
+  async buscarCategoriaSalarioOuResponder(res) {
+    const categoriaSalario = await this.buscarCategoriaSalario();
+
+    if (!categoriaSalario) {
+      res
+        .status(400)
+        .json({ mensagem: MENSAGEM_CATEGORIA_SALARIO_NAO_ENCONTRADA });
+      return null;
     }
 
-    return (
-      new Date(salario.dataUltimoProcessamento) >=
-      this.obterInicioMes(dataReferencia)
-    );
+    return categoriaSalario;
+  }
+
+  // Busca salário do usuário por id e categoria
+  async buscarSalarioDoUsuario(id, usuarioId, categoriaId) {
+    return Transacao.findOne({
+      _id: id,
+      usuario: usuarioId,
+      categoria: categoriaId,
+    });
   }
 
   // Verifica se salário deve ser processado na data informada
   salarioDeveSerProcessadoAgora(salario, dataReferencia = new Date()) {
-    if (!salario || !salario.ativa || !salario.conta) {
+    if (!salario || !salario.ativa) {
+      return false;
+    }
+
+    const fonteSaldo = salario.fonteSaldo || 'conta';
+    const contaId = extrairContaId(salario.conta);
+    const destinoValido = fonteSaldo === 'carteira' || !!contaId;
+
+    if (!destinoValido) {
       return false;
     }
 
@@ -45,27 +78,20 @@ class SalarioController {
     return diaRecebimento <= dataReferencia.getDate();
   }
 
-  // Extrai ID de ObjectId (mongo) de diferentes formatos de referência
-  extrairContaId(contaRef) {
-    if (!contaRef) {
-      return null;
+  // Normaliza destino de saldo recebido no payload
+  normalizarDestinoSaldo(payload = {}) {
+    if (payload.conta === 'carteira') {
+      return {
+        conta: null,
+        fonteSaldo: 'carteira',
+      };
     }
 
-    if (typeof contaRef === 'string') {
-      const matchObjectId = contaRef.match(/[a-fA-F0-9]{24}/);
-      return matchObjectId ? matchObjectId[0] : null;
-    }
-
-    if (typeof contaRef === 'object' && contaRef._id) {
-      return contaRef._id.toString();
-    }
-
-    if (typeof contaRef?.toString === 'function') {
-      const valor = contaRef.toString();
-      return /^[a-fA-F0-9]{24}$/.test(valor) ? valor : null;
-    }
-
-    return null;
+    const contaId = extrairContaId(payload.conta);
+    return {
+      conta: contaId,
+      fonteSaldo: 'conta',
+    };
   }
 
   // Aplica variações de saldo em múltiplas contas
@@ -73,7 +99,7 @@ class SalarioController {
     const entradas = Object.entries(deltas).filter(([, valor]) => valor !== 0);
 
     for (const [contaId, delta] of entradas) {
-      const contaIdNormalizado = this.extrairContaId(contaId);
+      const contaIdNormalizado = extrairContaId(contaId);
       if (!contaIdNormalizado) {
         continue;
       }
@@ -85,42 +111,49 @@ class SalarioController {
     }
   }
 
+  // Aplica variação de saldo na carteira do usuário
+  async aplicarDeltaCarteira(delta, usuarioId) {
+    if (!delta) {
+      return;
+    }
+
+    await Carteira.updateOne(
+      { usuario: usuarioId },
+      { $inc: { saldo: Number(delta) } },
+      { upsert: true }
+    );
+  }
+
   // Lista todos os salários do usuário
   async listar(req, res) {
-    const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
+    const categoriaSalario = await this.buscarCategoriaSalario();
 
     if (!categoriaSalario) {
       return res.json([]);
     }
 
-    const salarios = await Transacao.find({
-      usuario: req.user.id,
-      categoria: categoriaSalario._id,
-    })
-      .sort({ data: -1, createdAt: -1 })
-      .populate('conta', 'nome tipo')
-      .populate('categoria', 'nome');
+    const salarios = await aplicarPopulacaoSalario(
+      Transacao.find({
+        usuario: req.user.id,
+        categoria: categoriaSalario._id,
+      }).sort({ data: -1, createdAt: -1 })
+    );
 
     res.json(salarios);
   }
 
   // Cria novo salário recorrente
   async criar(req, res) {
-    const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
+    const categoriaSalario = await this.buscarCategoriaSalarioOuResponder(res);
+    if (!categoriaSalario) return;
 
-    if (!categoriaSalario) {
-      return res
-        .status(400)
-        .json({ mensagem: 'Categoria Salário não encontrada' });
-    }
-
-    const contaId = this.extrairContaId(req.body.conta);
+    const destinoSaldo = this.normalizarDestinoSaldo(req.body);
 
     const hoje = new Date();
 
     const salario = await Transacao.create({
       ...req.body,
-      conta: contaId,
+      ...destinoSaldo,
       usuario: req.user.id,
       categoria: categoriaSalario._id,
       tipo: 'entrada',
@@ -130,12 +163,17 @@ class SalarioController {
     });
 
     if (this.salarioDeveSerProcessadoAgora(salario, hoje)) {
-      const contaSalarioId = this.extrairContaId(salario.conta);
-      if (contaSalarioId) {
+      const destino = extrairDestinoSaldo(salario);
+
+      if (destino.tipo === 'conta') {
         await this.aplicarDeltaContas(
-          { [contaSalarioId]: salario.valor },
+          { [destino.contaId]: salario.valor },
           req.user.id
         );
+      }
+
+      if (destino.tipo === 'carteira') {
+        await this.aplicarDeltaCarteira(salario.valor, req.user.id);
       }
 
       await Transacao.updateOne(
@@ -144,124 +182,164 @@ class SalarioController {
       );
     }
 
-    const salarioPopulado = await Transacao.findById(salario._id)
-      .populate('conta', 'nome tipo')
-      .populate('categoria', 'nome');
+    const salarioPopulado = await aplicarPopulacaoSalario(
+      Transacao.findById(salario._id)
+    );
+
+    // Registra no histórico
+    await registrarHistoricoDaRequisicao(req, 'salario', {
+      entidadeId: salario._id,
+      acao: 'criacao',
+      descricao: montarDescricaoHistoricoSalario('criacao', salario),
+      dadosNovos: salario.toObject(),
+    });
 
     res.status(201).json(salarioPopulado);
   }
 
   // Atualiza salário existente
   async atualizar(req, res) {
-    const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
+    const categoriaSalario = await this.buscarCategoriaSalarioOuResponder(res);
+    if (!categoriaSalario) return;
 
-    if (!categoriaSalario) {
-      return res
-        .status(400)
-        .json({ mensagem: 'Categoria Salário não encontrada' });
-    }
-
-    const transacaoAntiga = await Transacao.findOne({
-      _id: req.params.id,
-      usuario: req.user.id,
-      categoria: categoriaSalario._id,
-    });
+    const transacaoAntiga = await this.buscarSalarioDoUsuario(
+      req.params.id,
+      req.user.id,
+      categoriaSalario._id
+    );
 
     if (!transacaoAntiga) {
-      return res.status(404).json({ mensagem: 'Salário não encontrado' });
+      return res
+        .status(404)
+        .json({ mensagem: MENSAGEM_SALARIO_NAO_ENCONTRADO });
     }
 
     const hoje = new Date();
-    const antigoProcessadoNoMes = this.salarioJaProcessadoNoMes(
+    const antigoProcessadoNoMes = salarioJaProcessadoNoMes(
       transacaoAntiga,
       hoje
     );
 
-    const payloadAtualizacao = {
-      ...req.body,
-    };
+    const payloadAtualizacao = { ...req.body };
 
     if (Object.prototype.hasOwnProperty.call(req.body, 'conta')) {
-      payloadAtualizacao.conta = this.extrairContaId(req.body.conta);
+      const destinoSaldo = this.normalizarDestinoSaldo(req.body);
+      payloadAtualizacao.conta = destinoSaldo.conta;
+      payloadAtualizacao.fonteSaldo = destinoSaldo.fonteSaldo;
     }
 
-    const salario = await Transacao.findOneAndUpdate(
-      {
-        _id: req.params.id,
-        usuario: req.user.id,
-        categoria: categoriaSalario._id,
-      },
-      payloadAtualizacao,
-      { returnDocument: 'after' }
-    )
-      .populate('conta', 'nome tipo')
-      .populate('categoria', 'nome');
+    const salarioPopulado = await aplicarPopulacaoSalario(
+      Transacao.findOneAndUpdate(
+        {
+          _id: req.params.id,
+          usuario: req.user.id,
+          categoria: categoriaSalario._id,
+        },
+        payloadAtualizacao,
+        { returnDocument: 'after' }
+      )
+    );
 
     const novoProcessadoNoMes = this.salarioDeveSerProcessadoAgora(
-      salario,
+      salarioPopulado,
       hoje
     );
 
-    const deltas = {};
+    const deltasConta = {};
+    let deltaCarteira = 0;
 
-    const contaAntigaId = this.extrairContaId(transacaoAntiga.conta);
-    const contaNovaId = this.extrairContaId(salario.conta);
+    const destinoAntigo = extrairDestinoSaldo(transacaoAntiga);
+    const destinoNovo = extrairDestinoSaldo(salarioPopulado);
 
-    if (antigoProcessadoNoMes && contaAntigaId) {
-      deltas[contaAntigaId] =
-        (deltas[contaAntigaId] || 0) - transacaoAntiga.valor;
+    if (antigoProcessadoNoMes) {
+      if (destinoAntigo.tipo === 'conta') {
+        deltasConta[destinoAntigo.contaId] =
+          (deltasConta[destinoAntigo.contaId] || 0) - transacaoAntiga.valor;
+      }
+
+      if (destinoAntigo.tipo === 'carteira') {
+        deltaCarteira -= transacaoAntiga.valor;
+      }
     }
 
-    if (novoProcessadoNoMes && contaNovaId) {
-      deltas[contaNovaId] = (deltas[contaNovaId] || 0) + salario.valor;
+    if (novoProcessadoNoMes) {
+      if (destinoNovo.tipo === 'conta') {
+        deltasConta[destinoNovo.contaId] =
+          (deltasConta[destinoNovo.contaId] || 0) + salarioPopulado.valor;
+      }
+
+      if (destinoNovo.tipo === 'carteira') {
+        deltaCarteira += salarioPopulado.valor;
+      }
     }
 
-    await this.aplicarDeltaContas(deltas, req.user.id);
+    await this.aplicarDeltaContas(deltasConta, req.user.id);
+    await this.aplicarDeltaCarteira(deltaCarteira, req.user.id);
 
     await Transacao.updateOne(
-      { _id: salario._id },
+      { _id: salarioPopulado._id },
       {
         dataUltimoProcessamento: novoProcessadoNoMes ? hoje : null,
         status: novoProcessadoNoMes ? 'pago' : 'pendente',
       }
     );
 
-    const salarioAtualizado = await Transacao.findById(salario._id)
-      .populate('conta', 'nome tipo')
-      .populate('categoria', 'nome');
+    const salarioAtualizado = await aplicarPopulacaoSalario(
+      Transacao.findById(salarioPopulado._id)
+    );
+
+    // Registra no histórico
+    await registrarHistoricoDaRequisicao(req, 'salario', {
+      entidadeId: salarioPopulado._id,
+      acao: 'edicao',
+      descricao: montarDescricaoHistoricoSalario('edicao', salarioAtualizado),
+      dadosAnteriores: transacaoAntiga.toObject(),
+      dadosNovos: salarioAtualizado.toObject(),
+    });
 
     res.json(salarioAtualizado);
   }
 
   // Deleta salário e reverte saldo se necessário
   async deletar(req, res) {
-    const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
+    const categoriaSalario = await this.buscarCategoriaSalarioOuResponder(res);
+    if (!categoriaSalario) return;
 
-    if (!categoriaSalario) {
-      return res
-        .status(400)
-        .json({ mensagem: 'Categoria Salário não encontrada' });
-    }
-
-    const salario = await Transacao.findOne({
-      _id: req.params.id,
-      usuario: req.user.id,
-      categoria: categoriaSalario._id,
-    });
+    const salario = await this.buscarSalarioDoUsuario(
+      req.params.id,
+      req.user.id,
+      categoriaSalario._id
+    );
 
     if (!salario) {
-      return res.status(404).json({ mensagem: 'Salário não encontrado' });
+      return res
+        .status(404)
+        .json({ mensagem: MENSAGEM_SALARIO_NAO_ENCONTRADO });
     }
 
-    const contaSalarioId = this.extrairContaId(salario.conta);
-    if (this.salarioJaProcessadoNoMes(salario) && contaSalarioId) {
-      await this.aplicarDeltaContas(
-        { [contaSalarioId]: -salario.valor },
-        req.user.id
-      );
+    const destino = extrairDestinoSaldo(salario);
+    if (salarioJaProcessadoNoMes(salario)) {
+      if (destino.tipo === 'conta') {
+        await this.aplicarDeltaContas(
+          { [destino.contaId]: -salario.valor },
+          req.user.id
+        );
+      }
+
+      if (destino.tipo === 'carteira') {
+        await this.aplicarDeltaCarteira(-salario.valor, req.user.id);
+      }
     }
 
     await salario.deleteOne();
+
+    // Registra no histórico
+    await registrarHistoricoDaRequisicao(req, 'salario', {
+      entidadeId: salario._id,
+      acao: 'delecao',
+      descricao: montarDescricaoHistoricoSalario('delecao', salario),
+      dadosAnteriores: salario.toObject(),
+    });
 
     res.json({ mensagem: 'Salário deletado' });
   }

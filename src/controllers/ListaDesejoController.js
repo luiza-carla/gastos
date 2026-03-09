@@ -1,4 +1,90 @@
 const ListaDesejo = require('../models/ListaDesejo');
+const Transacao = require('../models/Transacao');
+const Conta = require('../models/Conta');
+const HistoricoService = require('../services/HistoricoService');
+const CarteiraService = require('../services/CarteiraService');
+const { formatarMoeda } = require('../utils/stringHelpers');
+const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
+const { criarErro } = require('../utils/errorHelpers');
+
+const MENSAGEM_ITEM_NAO_ENCONTRADO = 'Item da lista de desejos nao encontrado';
+const PROJECAO_CATEGORIA = 'nome cor tipo';
+
+function popularCategoria(query) {
+  return query.populate('categoria', PROJECAO_CATEGORIA);
+}
+
+function buscarItemDoUsuario(itemId, usuarioId) {
+  return popularCategoria(
+    ListaDesejo.findOne({
+      _id: itemId,
+      usuario: usuarioId,
+    })
+  );
+}
+
+function responderItemNaoEncontrado(res) {
+  return res.status(404).json({ mensagem: MENSAGEM_ITEM_NAO_ENCONTRADO });
+}
+
+function montarUpdateData(body) {
+  const { titulo, valor, categoria, tipoDespesa, tags } = body;
+  const updateData = {};
+
+  // Mantém o comportamento atual: só atualiza campos com valor truthy
+  if (titulo) updateData.titulo = titulo;
+  if (valor) updateData.valor = valor;
+  if (categoria) updateData.categoria = categoria;
+  if (tipoDespesa) updateData.tipoDespesa = tipoDespesa;
+  if (tags) updateData.tags = tags;
+
+  return updateData;
+}
+
+function montarDescricaoHistorico(acao, titulo) {
+  const descricaoBase = HistoricoService.formatarDescricao(acao, 'listaDesejo');
+  return `${descricaoBase}: ${titulo}`;
+}
+
+async function validarSaldoDisponivel({
+  usuarioId,
+  contaId,
+  fonteSaldo,
+  valor,
+}) {
+  if (fonteSaldo === 'carteira') {
+    const carteira = await CarteiraService.obterOuCriar(usuarioId);
+    if (valor > Number(carteira.saldo || 0)) {
+      throw criarErro(400, 'Saldo insuficiente na carteira');
+    }
+    return;
+  }
+
+  const conta = await Conta.findOne({
+    _id: contaId,
+    usuario: usuarioId,
+  });
+
+  if (!conta) {
+    throw criarErro(404, 'Conta não encontrada');
+  }
+
+  if (valor > Number(conta.saldo || 0)) {
+    throw criarErro(400, 'Saldo insuficiente na conta');
+  }
+}
+
+async function debitarSaldo({ usuarioId, contaId, fonteSaldo, valor }) {
+  if (fonteSaldo === 'carteira') {
+    await CarteiraService.adicionarSaldo(usuarioId, -valor);
+    return;
+  }
+
+  await Conta.updateOne(
+    { _id: contaId, usuario: usuarioId },
+    { $inc: { saldo: -valor } }
+  );
+}
 
 class ListaDesejoController {
   // Cria item da lista de desejos
@@ -14,44 +100,57 @@ class ListaDesejoController {
       tipoDespesa,
     });
 
-    const itemCompleto = await ListaDesejo.findById(novoItem._id).populate(
-      'categoria',
-      'nome cor tipo'
+    const itemCompleto = await popularCategoria(
+      ListaDesejo.findById(novoItem._id)
     );
+
+    // Registra no histórico
+    await registrarHistoricoDaRequisicao(req, 'listaDesejo', {
+      entidadeId: novoItem._id,
+      acao: 'criacao',
+      descricao: montarDescricaoHistorico('criacao', titulo),
+      dadosNovos: novoItem.toObject(),
+    });
 
     res.status(201).json(itemCompleto);
   }
 
   // Lista itens da lista de desejos do usuario
   async listar(req, res) {
-    const itens = await ListaDesejo.find({ usuario: req.user.id })
-      .populate('categoria', 'nome cor tipo')
-      .sort({ createdAt: -1 });
+    const itens = await popularCategoria(
+      ListaDesejo.find({ usuario: req.user.id }).sort({ createdAt: -1 })
+    );
 
     res.json(itens);
   }
 
   // Atualiza item da lista de desejos
   async atualizar(req, res) {
-    const { titulo, valor, categoria, tipoDespesa, tags } = req.body;
+    const itemAntigo = await buscarItemDoUsuario(req.params.id, req.user.id);
 
-    const updateData = {};
-    if (titulo) updateData.titulo = titulo;
-    if (valor) updateData.valor = valor;
-    if (categoria) updateData.categoria = categoria;
-    if (tipoDespesa) updateData.tipoDespesa = tipoDespesa;
-    if (tags) updateData.tags = tags;
+    const updateData = montarUpdateData(req.body);
 
-    const item = await ListaDesejo.findOneAndUpdate(
-      { _id: req.params.id, usuario: req.user.id },
-      updateData,
-      { returnDocument: 'after' }
-    ).populate('categoria', 'nome cor tipo');
+    const item = await popularCategoria(
+      ListaDesejo.findOneAndUpdate(
+        { _id: req.params.id, usuario: req.user.id },
+        updateData,
+        { returnDocument: 'after' }
+      )
+    );
 
     if (!item) {
-      return res
-        .status(404)
-        .json({ mensagem: 'Item da lista de desejos nao encontrado' });
+      return responderItemNaoEncontrado(res);
+    }
+
+    // Registra no histórico
+    if (itemAntigo) {
+      await registrarHistoricoDaRequisicao(req, 'listaDesejo', {
+        entidadeId: item._id,
+        acao: 'edicao',
+        descricao: montarDescricaoHistorico('edicao', item.titulo),
+        dadosAnteriores: itemAntigo.toObject(),
+        dadosNovos: item.toObject(),
+      });
     }
 
     res.json(item);
@@ -65,12 +164,101 @@ class ListaDesejoController {
     });
 
     if (!item) {
-      return res
-        .status(404)
-        .json({ mensagem: 'Item da lista de desejos nao encontrado' });
+      return responderItemNaoEncontrado(res);
     }
 
+    // Registra no histórico
+    await registrarHistoricoDaRequisicao(req, 'listaDesejo', {
+      entidadeId: item._id,
+      acao: 'delecao',
+      descricao: montarDescricaoHistorico('delecao', item.titulo),
+      dadosAnteriores: item.toObject(),
+    });
+
     res.json({ mensagem: 'Item da lista de desejos deletado' });
+  }
+
+  // Realiza desejo: cria transação e remove item em uma ação única de histórico
+  async realizar(req, res) {
+    const item = await buscarItemDoUsuario(req.params.id, req.user.id);
+
+    if (!item) {
+      return responderItemNaoEncontrado(res);
+    }
+
+    const { conta, valor, status, data } = req.body;
+    const valorFinal = Number(valor || item.valor || 0);
+    const statusFinal = status || 'pago';
+    const fonteSaldo = conta === 'carteira' ? 'carteira' : 'conta';
+
+    if (!conta) {
+      return res.status(400).json({ mensagem: 'Conta é obrigatória' });
+    }
+
+    if (!valorFinal || valorFinal <= 0) {
+      return res.status(400).json({ mensagem: 'Valor inválido' });
+    }
+
+    if (statusFinal === 'pago') {
+      await validarSaldoDisponivel({
+        usuarioId: req.user.id,
+        contaId: conta,
+        fonteSaldo,
+        valor: valorFinal,
+      });
+    }
+
+    const novaTransacao = await Transacao.create({
+      usuario: req.user.id,
+      conta: fonteSaldo === 'carteira' ? undefined : conta,
+      fonteSaldo,
+      titulo: item.titulo,
+      valor: valorFinal,
+      tipo: 'saida',
+      categoria: item.categoria?._id,
+      data: data || Date.now(),
+      status: statusFinal,
+      recorrencia: 'nenhuma',
+      parcelamento: {
+        totalParcelas: 1,
+        parcelaAtual: 1,
+      },
+      tags: item.tags || [],
+      tipoDespesa: item.tipoDespesa,
+    });
+
+    if (statusFinal === 'pago') {
+      await debitarSaldo({
+        usuarioId: req.user.id,
+        contaId: conta,
+        fonteSaldo,
+        valor: valorFinal,
+      });
+    }
+
+    await ListaDesejo.findByIdAndDelete(item._id);
+
+    await registrarHistoricoDaRequisicao(req, 'listaDesejo', {
+      entidadeId: item._id,
+      acao: 'realizacao',
+      descricao: `Desejo realizado: ${item.titulo} (${formatarMoeda(valorFinal)})`,
+      dadosAnteriores: item.toObject(),
+      dadosNovos: {
+        transacaoId: novaTransacao._id,
+        conta: fonteSaldo === 'carteira' ? 'carteira' : conta,
+        valor: valorFinal,
+        status: statusFinal,
+      },
+    });
+
+    const transacaoCompleta = await Transacao.findById(novaTransacao._id)
+      .populate('conta', 'nome tipo')
+      .populate('categoria', 'nome cor tipo');
+
+    res.status(201).json({
+      mensagem: 'Desejo realizado com sucesso',
+      transacao: transacaoCompleta,
+    });
   }
 }
 

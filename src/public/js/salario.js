@@ -18,6 +18,7 @@ import {
   criarBotoesAcao,
   $,
   clearElement,
+  escaparHtml,
   setHTMLById,
 } from './helpers/index.js';
 import { listarContas } from './conta.js';
@@ -50,6 +51,32 @@ function popularSelectDiasRecebimento(
   }
 }
 
+// Popula destinos de depósito do salário (carteira + contas)
+async function popularSelectDestinoSalario(selectId = 'contaSalario') {
+  const select = $(selectId);
+  if (!select) return;
+
+  select.innerHTML = `
+    <option value="" selected>Selecione a conta ou carteira</option>
+    <option value="carteira">Carteira (dinheiro físico)</option>
+  `;
+
+  try {
+    const contas = await apiFetch('/contas');
+
+    const optionsContas = (contas || [])
+      .map(
+        (conta) =>
+          `<option value="${conta._id}">${escaparHtml(conta.nome)} (${escaparHtml(conta.tipo)})</option>`
+      )
+      .join('');
+
+    select.innerHTML += optionsContas;
+  } catch {
+    // Mantém ao menos a opção de carteira em caso de falha na busca de contas
+  }
+}
+
 // Atualiza telas que dependem de contas e resumo
 async function atualizarVisoesRelacionadas() {
   if ($('contas')) {
@@ -69,6 +96,7 @@ export function criarSalario(formId = 'formSalario', callback) {
   garantirErroInline(form, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
 
   popularSelectDiasRecebimento();
+  popularSelectDestinoSalario('contaSalario');
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -133,8 +161,15 @@ export async function listarSalarios() {
   clearElement(container);
 
   const gerarItem = (s) => {
-    const contaNome = s.conta ? s.conta.nome : 'Sem conta';
+    const contaNome =
+      s.fonteSaldo === 'carteira'
+        ? 'Carteira (dinheiro físico)'
+        : s.conta
+          ? s.conta.nome
+          : 'Sem conta';
     const diaRecebimento = s.diaRecebimento || 5;
+    const destinoSaldo =
+      s.fonteSaldo === 'carteira' ? 'carteira' : s.conta?._id || '';
     return `
       <div class="salario-item">
 
@@ -148,7 +183,7 @@ export async function listarSalarios() {
           ${criarBotoesAcao([
             {
               classe: 'btn-editar',
-              onclick: `editarSalario('${s._id}', ${s.valor}, ${diaRecebimento})`,
+              onclick: `editarSalario('${s._id}', ${s.valor}, ${diaRecebimento}, '${destinoSaldo}')`,
               icone: 'fa-pen',
             },
             {
@@ -188,7 +223,18 @@ window.deletarSalario = async (id) => {
 };
 
 // Abre modal para edicao de salario
-window.editarSalario = (id, valor, diaRecebimento) => {
+window.editarSalario = async (id, valor, diaRecebimento, destinoAtual = '') => {
+  const contas = await apiFetch('/contas');
+
+  const optionsContas = contas
+    .map((conta) => {
+      const selected = conta._id === destinoAtual ? 'selected' : '';
+      return `<option value="${conta._id}" ${selected}>${conta.nome} (${conta.tipo})</option>`;
+    })
+    .join('');
+
+  const carteiraSelecionada = destinoAtual === 'carteira' ? 'selected' : '';
+
   abrirModal({
     titulo: 'Editar salário',
 
@@ -209,6 +255,14 @@ window.editarSalario = (id, valor, diaRecebimento) => {
             .join('')}
         </select>
       </div>
+      <div class="form-group">
+        <label>Destino do depósito</label>
+        <select id="modalContaSalario">
+          <option value="" ${!destinoAtual ? 'selected' : ''}>Selecione a conta ou carteira</option>
+          <option value="carteira" ${carteiraSelecionada}>Carteira (dinheiro físico)</option>
+          ${optionsContas}
+        </select>
+      </div>
     `,
 
     onSalvar: async () => {
@@ -216,6 +270,7 @@ window.editarSalario = (id, valor, diaRecebimento) => {
 
       const novoValor = Number($('modalValorSalario')?.value);
       const novoDiaRecebimento = Number($('modalDiaRecebimento')?.value);
+      const novaConta = $('modalContaSalario')?.value || null;
 
       if (!novoValor || !novoDiaRecebimento) {
         mostrarErroInline('Por favor, preencha todos os campos obrigatórios');
@@ -229,6 +284,7 @@ window.editarSalario = (id, valor, diaRecebimento) => {
             valor: novoValor,
             diaRecebimento: novoDiaRecebimento,
             frequencia: 'mensal',
+            conta: novaConta,
           }),
         });
 

@@ -11,10 +11,11 @@ import { $ } from './helpers/index.js';
 (async function () {
   await verificarAutenticacao();
 
-  await import('./modalEditar.js');
-
-  // Inicializa categorias
-  await inicializarCategorias();
+  await Promise.all([
+    import('./modalEditar.js'),
+    // Inicializa categorias
+    inicializarCategorias(),
+  ]);
 })();
 
 // Inicializa transações
@@ -30,16 +31,22 @@ import { $ } from './helpers/index.js';
 
 // Inicializa contas
 (async function () {
+  const tarefas = [];
+
   if ($('contas')) {
-    await listarContas();
+    tarefas.push(listarContas());
   }
 
   if ($('carteiraSaldo')) {
-    await exibirCarteira();
+    tarefas.push(exibirCarteira());
   }
 
-  if ($('conta') || $('contaSalario')) {
-    await popularSelectContas();
+  if ($('conta')) {
+    tarefas.push(popularSelectContas());
+  }
+
+  if (tarefas.length) {
+    await Promise.all(tarefas);
   }
 
   if ($('formConta')) {
@@ -69,12 +76,18 @@ import { $ } from './helpers/index.js';
 
 // Inicializa salarios
 (async function () {
+  const tarefas = [];
+
   if ($('salariosContainer')) {
-    await listarSalarios();
+    tarefas.push(listarSalarios());
   }
 
   if ($('contaSalario')) {
-    await popularSelectContas('contaSalario');
+    tarefas.push(popularSelectContas('contaSalario'));
+  }
+
+  if (tarefas.length) {
+    await Promise.all(tarefas);
   }
 
   if ($('formSalario')) {

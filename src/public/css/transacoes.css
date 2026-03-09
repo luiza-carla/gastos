@@ -155,6 +155,45 @@
   font-size: 18px;
 }
 
+.pagination-listagem {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--cinza-linha);
+}
+
+.pagination-listagem span {
+  font-size: 13px;
+  color: var(--cinza-texto);
+  min-width: 120px;
+  text-align: center;
+}
+
+.pagination-listagem button {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--rosa);
+  color: var(--cinza-1);
+}
+
+.pagination-listagem button:hover:not(:disabled) {
+  background: var(--rosa-claro);
+}
+
+.pagination-listagem button:disabled {
+  background: var(--cinza-4);
+  color: var(--cinza-texto-claro);
+  cursor: not-allowed;
+}
+
 .transacao-card {
   background: var(--branco);
   border-radius: 12px;

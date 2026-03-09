@@ -6,6 +6,11 @@ const asyncHandler = require('../middlewares/asyncHandler');
 
 router.post('/', autenticacao, asyncHandler(ListaDesejoController.criar));
 router.get('/', autenticacao, asyncHandler(ListaDesejoController.listar));
+router.post(
+  '/:id/realizar',
+  autenticacao,
+  asyncHandler(ListaDesejoController.realizar)
+);
 router.put('/:id', autenticacao, asyncHandler(ListaDesejoController.atualizar));
 router.delete(
   '/:id',

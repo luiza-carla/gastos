@@ -1,5 +1,5 @@
 import { setToken, apiFetch } from './config.js';
-import { $ } from './helpers/index.js';
+import { $, configurarToggleSenha } from './helpers/index.js';
 import {
   mostrarErroInline,
   limparErroInline,
@@ -15,6 +15,7 @@ const FORM_ERRO_ID = 'formErroInlineRegistrar';
 const FORM_MSG_ERRO_ID = 'formMensagemErroRegistrar';
 
 garantirErroInline(formRegistrar, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
+configurarToggleSenha('senha');
 
 // Trata envio do formulário de registro
 if (formRegistrar) {

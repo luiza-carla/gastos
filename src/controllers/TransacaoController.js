@@ -1,11 +1,54 @@
 const Transacao = require('../models/Transacao');
 const Conta = require('../models/Conta');
+const Categoria = require('../models/Categoria');
 const CarteiraService = require('../services/CarteiraService');
+const HistoricoService = require('../services/HistoricoService');
+const { criarErro } = require('../utils/errorHelpers');
+const { registrarHistoricoDaRequisicao } = require('../utils/historicoHelpers');
 
-function criarErro(statusCode, mensagem) {
-  const erro = new Error(mensagem);
-  erro.statusCode = statusCode;
-  return erro;
+const MENSAGEM_TRANSACAO_NAO_ENCONTRADA = 'Transação não encontrada';
+
+function obterDeltaAplicadoCarteira(transacao) {
+  if (!transacao || transacao.fonteSaldo !== 'carteira') {
+    return 0;
+  }
+
+  if (transacao.status !== 'pago') {
+    return 0;
+  }
+
+  const valor = Number(transacao.valor || 0);
+  if (!valor) {
+    return 0;
+  }
+
+  return transacao.tipo === 'entrada' ? valor : -valor;
+}
+
+async function validarCarteiraNaoNegativaEmAtualizacao(
+  usuarioId,
+  transacaoAntiga,
+  updateData
+) {
+  const transacaoSimulada = {
+    ...transacaoAntiga.toObject(),
+    ...updateData,
+  };
+
+  const deltaAntigo = obterDeltaAplicadoCarteira(transacaoAntiga);
+  const deltaNovo = obterDeltaAplicadoCarteira(transacaoSimulada);
+
+  // Na atualização, primeiro desfazemos o movimento antigo e depois aplicamos o novo.
+  const deltaLiquidoCarteira = -deltaAntigo + deltaNovo;
+
+  if (deltaLiquidoCarteira >= 0) {
+    return;
+  }
+
+  const carteira = await CarteiraService.obterOuCriar(usuarioId);
+  if (Number(carteira.saldo || 0) + deltaLiquidoCarteira < 0) {
+    throw criarErro(400, 'Saldo insuficiente na carteira');
+  }
 }
 
 async function buscarContaDoUsuario(contaId, usuarioId) {
@@ -55,6 +98,21 @@ async function reverterMovimento(transacao, usuarioId) {
   }
 
   await ajustarSaldoConta(transacao.conta, usuarioId, delta);
+}
+
+function aplicarPopulacaoTransacao(query) {
+  return query
+    .populate('conta', 'nome tipo')
+    .populate('categoria', 'nome cor tipo');
+}
+
+async function buscarTransacaoDoUsuario(transacaoId, usuarioId) {
+  return aplicarPopulacaoTransacao(
+    Transacao.findOne({
+      _id: transacaoId,
+      usuario: usuarioId,
+    })
+  );
 }
 
 class TransacaoController {
@@ -119,9 +177,20 @@ class TransacaoController {
     }
 
     // Recupera transação completa com relações populadas
-    const transacaoCompleta = await Transacao.findById(novaTransacao._id)
-      .populate('conta', 'nome tipo')
-      .populate('categoria', 'nome cor tipo');
+    const transacaoCompleta = await aplicarPopulacaoTransacao(
+      Transacao.findById(novaTransacao._id)
+    );
+
+    // Registra no histórico
+    await registrarHistoricoDaRequisicao(req, 'transacao', {
+      entidadeId: novaTransacao._id,
+      acao: 'criacao',
+      descricao: HistoricoService.formatarDescricaoTransacao(
+        'criacao',
+        novaTransacao
+      ),
+      dadosNovos: novaTransacao.toObject(),
+    });
 
     res.status(201).json(transacaoCompleta);
   }
@@ -129,8 +198,6 @@ class TransacaoController {
   // Lista todas as transações do usuário (excluindo salários)
   async listar(req, res) {
     // Busca categoria salário para excluir das transações
-    const Categoria = require('../models/Categoria');
-
     const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
 
     // Monta filtro para excluir salários das transações
@@ -142,10 +209,9 @@ class TransacaoController {
       filtro.categoria = { $ne: categoriaSalario._id };
     }
 
-    const transacoes = await Transacao.find(filtro)
-      .populate('conta', 'nome tipo')
-      .populate('categoria', 'nome cor tipo')
-      .sort({ data: -1 });
+    const transacoes = await aplicarPopulacaoTransacao(
+      Transacao.find(filtro).sort({ data: -1 })
+    );
 
     res.json(transacoes);
   }
@@ -153,13 +219,15 @@ class TransacaoController {
   // Atualiza transação existente e reajusta saldos de contas
   async atualizar(req, res) {
     // Busca transação antiga para comparar alterações
-    const transacaoAntiga = await Transacao.findOne({
-      _id: req.params.id,
-      usuario: req.user.id,
-    });
+    const transacaoAntiga = await buscarTransacaoDoUsuario(
+      req.params.id,
+      req.user.id
+    );
 
     if (!transacaoAntiga) {
-      return res.status(404).json({ mensagem: 'Transação não encontrada' });
+      return res
+        .status(404)
+        .json({ mensagem: MENSAGEM_TRANSACAO_NAO_ENCONTRADA });
     }
 
     const updateData = { ...req.body };
@@ -169,6 +237,12 @@ class TransacaoController {
     } else if (Object.prototype.hasOwnProperty.call(updateData, 'conta')) {
       updateData.fonteSaldo = 'conta';
     }
+
+    await validarCarteiraNaoNegativaEmAtualizacao(
+      req.user.id,
+      transacaoAntiga,
+      updateData
+    );
 
     // Remove tipoDespesa se tipo não for saída
     if (updateData.tipo !== 'saida') {
@@ -181,17 +255,29 @@ class TransacaoController {
     }
 
     // Atualiza transação no banco
-    const transacao = await Transacao.findOneAndUpdate(
-      { _id: req.params.id, usuario: req.user.id },
-      updateData,
-      { returnDocument: 'after' }
-    )
-      .populate('conta', 'nome tipo')
-      .populate('categoria', 'nome cor tipo');
+    const transacao = await aplicarPopulacaoTransacao(
+      Transacao.findOneAndUpdate(
+        { _id: req.params.id, usuario: req.user.id },
+        updateData,
+        { returnDocument: 'after' }
+      )
+    );
 
     if (transacao.status === 'pago') {
       await aplicarMovimento(transacao, req.user.id);
     }
+
+    // Registra no histórico
+    await registrarHistoricoDaRequisicao(req, 'transacao', {
+      entidadeId: transacao._id,
+      acao: 'edicao',
+      descricao: HistoricoService.formatarDescricaoTransacao(
+        'edicao',
+        transacao
+      ),
+      dadosAnteriores: transacaoAntiga.toObject(),
+      dadosNovos: transacao.toObject(),
+    });
 
     res.json(transacao);
   }
@@ -199,13 +285,15 @@ class TransacaoController {
   // Deleta transação e reverte saldo da conta
   async deletar(req, res) {
     // Busca transação antes de deletar
-    const transacao = await Transacao.findOne({
-      _id: req.params.id,
-      usuario: req.user.id,
-    });
+    const transacao = await buscarTransacaoDoUsuario(
+      req.params.id,
+      req.user.id
+    );
 
     if (!transacao) {
-      return res.status(404).json({ mensagem: 'Transação não encontrada' });
+      return res
+        .status(404)
+        .json({ mensagem: MENSAGEM_TRANSACAO_NAO_ENCONTRADA });
     }
 
     // Reverte saldo da conta se transação estava paga
@@ -215,6 +303,17 @@ class TransacaoController {
 
     // Remove transação do banco
     await Transacao.findByIdAndDelete(transacao._id);
+
+    // Registra no histórico
+    await registrarHistoricoDaRequisicao(req, 'transacao', {
+      entidadeId: transacao._id,
+      acao: 'delecao',
+      descricao: HistoricoService.formatarDescricaoTransacao(
+        'delecao',
+        transacao
+      ),
+      dadosAnteriores: transacao.toObject(),
+    });
 
     res.json({ mensagem: 'Transação deletada' });
   }

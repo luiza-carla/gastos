@@ -1,5 +1,7 @@
 const Carteira = require('../models/Carteira');
 const Conta = require('../models/Conta');
+const HistoricoService = require('./HistoricoService');
+const { criarErro } = require('../utils/errorHelpers');
 
 class CarteiraService {
   // Obtém ou cria carteira do usuário
@@ -19,18 +21,14 @@ class CarteiraService {
   // Adiciona ou remove valor da carteira
   async adicionarSaldo(usuarioId, valor) {
     if (!valor || valor === 0) {
-      const erro = new Error('Valor inválido');
-      erro.statusCode = 400;
-      throw erro;
+      throw criarErro(400, 'Valor inválido');
     }
 
     let carteira = await this.obterOuCriar(usuarioId);
     const novoSaldo = carteira.saldo + valor;
 
     if (novoSaldo < 0) {
-      const erro = new Error('Saldo insuficiente na carteira');
-      erro.statusCode = 400;
-      throw erro;
+      throw criarErro(400, 'Saldo insuficiente na carteira');
     }
 
     carteira.saldo = novoSaldo;
@@ -42,15 +40,11 @@ class CarteiraService {
   // Transfere entre carteira e conta
   async transferir(usuarioId, contaId, valor, direcao) {
     if (!contaId || !valor || valor <= 0) {
-      const erro = new Error('Conta e valor são obrigatórios');
-      erro.statusCode = 400;
-      throw erro;
+      throw criarErro(400, 'Conta e valor são obrigatórios');
     }
 
     if (!['carteira-para-conta', 'conta-para-carteira'].includes(direcao)) {
-      const erro = new Error('Direção inválida');
-      erro.statusCode = 400;
-      throw erro;
+      throw criarErro(400, 'Direção inválida');
     }
 
     // Obtém carteira e conta
@@ -61,25 +55,22 @@ class CarteiraService {
     });
 
     if (!conta) {
-      const erro = new Error('Conta não encontrada');
-      erro.statusCode = 404;
-      throw erro;
+      throw criarErro(404, 'Conta não encontrada');
     }
 
     // Valida saldos
     if (direcao === 'carteira-para-conta' && carteira.saldo < valor) {
-      const erro = new Error('Saldo insuficiente na carteira');
-      erro.statusCode = 400;
-      throw erro;
+      throw criarErro(400, 'Saldo insuficiente na carteira');
     }
 
     if (direcao === 'conta-para-carteira' && conta.saldo < valor) {
-      const erro = new Error('Saldo insuficiente na conta');
-      erro.statusCode = 400;
-      throw erro;
+      throw criarErro(400, 'Saldo insuficiente na conta');
     }
 
     // Executa transferência
+    const saldoCarteiraAnterior = carteira.saldo;
+    const saldoContaAnterior = conta.saldo;
+
     if (direcao === 'carteira-para-conta') {
       carteira.saldo -= valor;
       conta.saldo += valor;
@@ -90,6 +81,31 @@ class CarteiraService {
 
     await carteira.save();
     await conta.save();
+
+    // Registra transferência no histórico
+    await HistoricoService.registrar({
+      usuario: usuarioId,
+      entidade: 'carteira',
+      entidadeId: carteira._id,
+      acao: 'transferencia',
+      descricao: HistoricoService.formatarDescricaoTransferenciaCarteira(
+        conta,
+        valor,
+        direcao
+      ),
+      dadosAnteriores: {
+        carteiraSaldo: saldoCarteiraAnterior,
+        contaId: conta._id,
+        contaSaldo: saldoContaAnterior,
+        direcao,
+      },
+      dadosNovos: {
+        carteiraSaldo: carteira.saldo,
+        contaId: conta._id,
+        contaSaldo: conta.saldo,
+        direcao,
+      },
+    });
 
     return {
       carteira,

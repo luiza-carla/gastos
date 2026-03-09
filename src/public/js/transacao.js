@@ -34,6 +34,7 @@ import {
   inicializarEditorTags,
   resetarTagsFormulario,
   setupCategoriaAutocomplete,
+  criarPaginacao,
 } from './helpers/index.js';
 
 // Armazena tags temporarias do formulario
@@ -43,6 +44,21 @@ const URL_TRANSACOES = `${window.location.origin}/transacoes`;
 const URL_CATEGORIAS = `${window.location.origin}/categorias`;
 const FORM_ERRO_ID = 'formErroInlineTransacao';
 const FORM_MSG_ERRO_ID = 'formMensagemErroTransacao';
+
+const stateTransacoes = {
+  itens: [],
+};
+
+const paginacaoTransacoes = criarPaginacao({
+  containerId: 'paginationTransacoes',
+  prevButtonId: 'btnAnteriorTransacoes',
+  nextButtonId: 'btnProximoTransacoes',
+  infoId: 'pageInfoTransacoes',
+  limit: 10,
+  onChange: async () => {
+    renderizarPaginaTransacoes();
+  },
+});
 
 function mostrarErroApi(erro, mensagemPadrao) {
   abrirModalErro(erro.message || mensagemPadrao);
@@ -184,14 +200,23 @@ export async function listarTransacoes() {
   if (!container) return;
 
   const transacoes = await carregarTransacoes();
-  const total = calcularTotalItens(transacoes, (t) =>
+  stateTransacoes.itens = transacoes || [];
+
+  const total = calcularTotalItens(stateTransacoes.itens, (t) =>
     t.tipo === 'saida' ? -Number(t.valor || 0) : Number(t.valor || 0)
   );
-  // Gera HTML das tags da transacao
 
   setTextById('totalTransacoes', `R$ ${formatarValor(total)}`);
+  renderizarPaginaTransacoes();
+}
 
-  setHTMLById('transacoes', criarCardsHTML(transacoes, criarCardTransacao));
+function renderizarPaginaTransacoes() {
+  const { skip, limit } = paginacaoTransacoes.getParams();
+  const totalItens = stateTransacoes.itens.length;
+  const itensPagina = stateTransacoes.itens.slice(skip, skip + limit);
+
+  setHTMLById('transacoes', criarCardsHTML(itensPagina, criarCardTransacao));
+  paginacaoTransacoes.setTotal(totalItens);
 }
 
 function criarCardTransacao(t) {
@@ -326,6 +351,7 @@ function criarCardTransacao(t) {
 window.editarTransacao = async (id) => {
   const transacao = (await carregarTransacoes()).find((t) => t._id === id);
   const categorias = await apiFetch(URL_CATEGORIAS);
+  const contas = await apiFetch('/contas');
 
   if (!transacao) return;
 
@@ -342,6 +368,18 @@ window.editarTransacao = async (id) => {
       </select>
     </div>
   `;
+
+  const destinoAtual =
+    transacao.fonteSaldo === 'carteira' ? 'carteira' : transacao.conta?._id;
+
+  const optionsContas = (contas || [])
+    .map((conta) => {
+      const selecionada = conta._id === destinoAtual ? 'selected' : '';
+      return `<option value="${conta._id}" ${selecionada}>${escaparHtml(conta.nome)} (${escaparHtml(conta.tipo)})</option>`;
+    })
+    .join('');
+
+  const carteiraSelecionada = destinoAtual === 'carteira' ? 'selected' : '';
 
   abrirModal({
     titulo: 'Editar transação',
@@ -366,6 +404,14 @@ window.editarTransacao = async (id) => {
         <select id="modalStatusTransacao" required>
           <option value="pago" ${transacao.status === 'pago' ? 'selected' : ''}>Pago</option>
           <option value="pendente" ${transacao.status === 'pendente' ? 'selected' : ''}>Pendente</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Conta ou carteira</label>
+        <select id="modalContaTransacao" required>
+          <option value="" disabled ${!destinoAtual ? 'selected' : ''}>Selecione a conta ou carteira</option>
+          <option value="carteira" ${carteiraSelecionada}>Carteira (dinheiro físico)</option>
+          ${optionsContas}
         </select>
       </div>
       <div class="form-group">
@@ -395,6 +441,7 @@ window.editarTransacao = async (id) => {
       const novoValor = Number($('modalValorTransacao')?.value);
       const novoTipo = $('modalTipoTransacao')?.value;
       const novoStatus = $('modalStatusTransacao')?.value;
+      const novaConta = $('modalContaTransacao')?.value;
       const novaCategoria = $('modalCategoriaTransacao')?.value;
       const novoTipoDespesa = $('modalTipoDespesa')?.value;
 
@@ -403,6 +450,7 @@ window.editarTransacao = async (id) => {
         !novoValor ||
         !novoTipo ||
         !novoStatus ||
+        !novaConta ||
         !novaCategoria
       ) {
         mostrarErroInline('Por favor, preencha todos os campos obrigatórios');
@@ -414,6 +462,7 @@ window.editarTransacao = async (id) => {
         valor: novoValor,
         tipo: novoTipo,
         status: novoStatus,
+        conta: novaConta,
         categoria: novaCategoria,
         tags: tagsModal,
       };
@@ -495,6 +544,8 @@ window.deletarTransacao = async (id) => {
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  paginacaoTransacoes.init();
+
   if ($('formTransacao')) {
     inicializarTags(tags);
   }

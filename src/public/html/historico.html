@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Histórico - Controle de Gastos</title>
+    <link rel="stylesheet" href="../css/base.css" />
+    <link rel="stylesheet" href="../css/historico.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div id="notification-container"></div>
+
+    <div id="menu"></div>
+
+    <main>
+      <div class="container">
+        <header class="page-header">
+          <h1>Histórico de Atividades</h1>
+          <p class="subtitle">Acompanhe todas as alterações realizadas</p>
+        </header>
+
+        <section class="filters-section">
+          <div class="filter-group">
+            <label for="filtro-entidade">Tipo:</label>
+            <select id="filtro-entidade">
+              <option value="">Todos</option>
+              <option value="transacao">Transações</option>
+              <option value="conta">Contas</option>
+              <option value="carteira">Carteira</option>
+              <option value="salario">Salários</option>
+              <option value="listaDesejo">Lista de Desejos</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="filtro-acao">Ação:</label>
+            <select id="filtro-acao">
+              <option value="">Todas</option>
+              <option value="criacao">Criações</option>
+              <option value="edicao">Edições</option>
+              <option value="delecao">Deleções</option>
+              <option value="transferencia">Transferências</option>
+              <option value="realizacao">Realizações</option>
+            </select>
+          </div>
+
+          <button id="btn-aplicar-filtros">
+            Aplicar Filtros
+          </button>
+          <button id="btn-limpar-filtros">
+            Limpar
+          </button>
+        </section>
+
+        <section class="historico-section">
+          <div id="historico-lista" class="historico-lista"></div>
+
+          <div id="loading" class="loading" style="display: none">
+            Carregando...
+          </div>
+
+          <div id="empty-state" class="empty-state" style="display: none">
+            <p>Nenhum registro encontrado</p>
+          </div>
+
+          <div id="pagination" class="pagination" style="display: none">
+            <button id="btn-anterior" disabled>
+              Anterior
+            </button>
+            <span id="page-info">Página 1</span>
+            <button id="btn-proximo">Próximo</button>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <script type="module" src="../js/init.js"></script>
+    <script type="module" src="../js/historico.js"></script>
+  </body>
+</html>

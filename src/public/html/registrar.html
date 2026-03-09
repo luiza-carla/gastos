@@ -3,6 +3,10 @@
   <head>
     <meta charset="utf-8" />
     <title>Registro</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
     <link rel="stylesheet" href="../css/style.css" />
     <link rel="stylesheet" href="../css/modal.css" />
     <link rel="stylesheet" href="../css/auth.css" />
@@ -25,7 +29,18 @@
 
         <div class="form-group">
           <label for="senha">Senha</label>
-          <input id="senha" type="password" required />
+          <div class="password-field">
+            <input id="senha" type="password" required />
+            <button
+              type="button"
+              class="password-toggle"
+              data-target="senha"
+              aria-label="Mostrar senha"
+              aria-pressed="false"
+            >
+              <i class="fa-regular fa-eye" aria-hidden="true"></i>
+            </button>
+          </div>
         </div>
 
         <button type="submit">Registrar</button>

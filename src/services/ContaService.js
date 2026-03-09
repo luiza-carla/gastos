@@ -1,9 +1,63 @@
 const Conta = require('../models/Conta');
+const Transacao = require('../models/Transacao');
+const HistoricoService = require('./HistoricoService');
+const { criarErro } = require('../utils/errorHelpers');
+
+const MENSAGEM_CONTA_EM_USO =
+  'Não é possível apagar a conta pois existem transações ou salários associados.';
+
+async function registrarHistoricoConta({
+  usuario,
+  conta,
+  contaId,
+  acao,
+  dadosAnteriores,
+  dadosNovos,
+}) {
+  await HistoricoService.registrar({
+    usuario,
+    entidade: 'conta',
+    entidadeId: contaId || conta?._id,
+    acao,
+    descricao: HistoricoService.formatarDescricaoConta(acao, conta),
+    dadosAnteriores,
+    dadosNovos,
+  });
+}
+
+function validarDadosTransferencia(contaDestinoId, valor) {
+  if (!contaDestinoId || !valor || valor <= 0) {
+    throw criarErro(400, 'Conta destino e valor são obrigatórios');
+  }
+}
+
+function validarContasTransferencia(contaOrigem, contaDestino, valor) {
+  if (!contaOrigem) {
+    throw criarErro(404, 'Conta de origem não encontrada');
+  }
+
+  if (!contaDestino) {
+    throw criarErro(404, 'Conta de destino não encontrada');
+  }
+
+  if (contaOrigem.saldo < valor) {
+    throw criarErro(400, 'Saldo insuficiente na conta de origem');
+  }
+}
 
 class ContaService {
   // Cria nova conta
   async criar(dados) {
-    return Conta.create(dados);
+    const conta = await Conta.create(dados);
+
+    await registrarHistoricoConta({
+      usuario: dados.usuario,
+      conta,
+      acao: 'criacao',
+      dadosNovos: conta.toObject(),
+    });
+
+    return conta;
   }
 
   // Lista todas as contas do usuário
@@ -18,40 +72,55 @@ class ContaService {
 
   // Atualiza dados de uma conta
   async atualizar(id, dados) {
-    return Conta.findByIdAndUpdate(id, dados, { returnDocument: 'after' });
+    const contaAntiga = await Conta.findById(id);
+    const conta = await Conta.findByIdAndUpdate(id, dados, {
+      returnDocument: 'after',
+    });
+
+    if (conta && contaAntiga) {
+      await registrarHistoricoConta({
+        usuario: conta.usuario,
+        conta,
+        acao: 'edicao',
+        dadosAnteriores: contaAntiga.toObject(),
+        dadosNovos: conta.toObject(),
+      });
+    }
+
+    return conta;
   }
 
   // Deleta conta se não houver transações associadas
   async deletar(id, usuarioId) {
-    const Transacao = require('../models/Transacao');
-
-    // Valida se existem transações na conta
     const transCount = await Transacao.countDocuments({
       conta: id,
       usuario: usuarioId,
     });
 
     if (transCount > 0) {
-      const erro = new Error(
-        'Não é possível apagar a conta pois existem transações ou salários associados.'
-      );
-      erro.statusCode = 400;
-      throw erro;
+      throw criarErro(400, MENSAGEM_CONTA_EM_USO);
     }
 
-    return Conta.findByIdAndDelete(id);
+    const conta = await Conta.findById(id);
+    const resultado = await Conta.findByIdAndDelete(id);
+
+    if (conta) {
+      await registrarHistoricoConta({
+        usuario: usuarioId,
+        conta,
+        contaId: id,
+        acao: 'delecao',
+        dadosAnteriores: conta.toObject(),
+      });
+    }
+
+    return resultado;
   }
 
   // Transfere valor entre contas do mesmo usuário
   async transferir(contaOrigemId, contaDestinoId, valor, usuarioId) {
-    // Valida parâmetros
-    if (!contaDestinoId || !valor || valor <= 0) {
-      const erro = new Error('Conta destino e valor são obrigatórios');
-      erro.statusCode = 400;
-      throw erro;
-    }
+    validarDadosTransferencia(contaDestinoId, valor);
 
-    // Busca ambas as contas
     const contaOrigem = await Conta.findOne({
       _id: contaOrigemId,
       usuario: usuarioId,
@@ -62,30 +131,41 @@ class ContaService {
       usuario: usuarioId,
     });
 
-    if (!contaOrigem) {
-      const erro = new Error('Conta de origem não encontrada');
-      erro.statusCode = 404;
-      throw erro;
-    }
+    validarContasTransferencia(contaOrigem, contaDestino, valor);
 
-    if (!contaDestino) {
-      const erro = new Error('Conta de destino não encontrada');
-      erro.statusCode = 404;
-      throw erro;
-    }
+    const saldoOrigemAnterior = contaOrigem.saldo;
+    const saldoDestinoAnterior = contaDestino.saldo;
 
-    if (contaOrigem.saldo < valor) {
-      const erro = new Error('Saldo insuficiente na conta de origem');
-      erro.statusCode = 400;
-      throw erro;
-    }
-
-    // Realiza a transferência
     contaOrigem.saldo -= valor;
     contaDestino.saldo += valor;
 
     await contaOrigem.save();
     await contaDestino.save();
+
+    // Registra transferência como ação única no histórico
+    await HistoricoService.registrar({
+      usuario: usuarioId,
+      entidade: 'conta',
+      entidadeId: contaOrigem._id,
+      acao: 'transferencia',
+      descricao: HistoricoService.formatarDescricaoTransferenciaConta(
+        contaOrigem,
+        contaDestino,
+        valor
+      ),
+      dadosAnteriores: {
+        contaOrigemId: contaOrigem._id,
+        contaDestinoId: contaDestino._id,
+        saldoOrigem: saldoOrigemAnterior,
+        saldoDestino: saldoDestinoAnterior,
+      },
+      dadosNovos: {
+        contaOrigemId: contaOrigem._id,
+        contaDestinoId: contaDestino._id,
+        saldoOrigem: contaOrigem.saldo,
+        saldoDestino: contaDestino.saldo,
+      },
+    });
 
     return {
       mensagem: 'Transferência realizada com sucesso',

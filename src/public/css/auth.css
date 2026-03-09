@@ -54,6 +54,12 @@ h2 {
   color: var(--rosa-claro);
 }
 
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 form {
   display: flex;
   flex-direction: column;
@@ -87,7 +93,50 @@ input:invalid:not(:placeholder-shown) {
   border-color: var(--vermelho);
 }
 
-button {
+.password-field {
+  position: relative;
+}
+
+.password-field input {
+  padding-right: 46px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--cinza-texto);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  box-shadow: none;
+}
+
+.password-toggle:hover {
+  transform: translateY(-50%);
+  color: var(--cinza-1);
+  background: rgba(0, 0, 0, 0.05);
+  box-shadow: none;
+}
+
+.password-toggle:active {
+  transform: translateY(-50%);
+  box-shadow: none;
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid var(--verde);
+  outline-offset: 2px;
+}
+
+form > button[type='submit'] {
   width: 100%;
   padding: 14px 16px;
   background: linear-gradient(135deg, var(--verde) 0%, var(--verde-azul) 100%);
@@ -102,12 +151,12 @@ button {
   box-shadow: 0 4px 15px rgba(132, 176, 130, 0.3);
 }
 
-button:hover {
+form > button[type='submit']:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(132, 176, 130, 0.4);
 }
 
-button:active {
+form > button[type='submit']:active {
   transform: translateY(0);
   box-shadow: 0 2px 10px rgba(132, 176, 130, 0.3);
 }
@@ -127,7 +176,7 @@ button:active {
     font-size: 14px;
   }
 
-  button {
+  form > button[type='submit'] {
     padding: 12px 14px;
     font-size: 15px;
   }
