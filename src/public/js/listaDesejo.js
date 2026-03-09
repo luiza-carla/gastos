@@ -1,11 +1,23 @@
 import { apiFetch } from './config.js';
 import { limparCategoriaSelecionada } from './categoria.js';
-import { abrirModal, fecharModal, abrirModalErro, mostrarErroInline, limparErroInline } from './modalEditar.js';
+import {
+  abrirModal,
+  fecharModal,
+  abrirModalErro,
+  mostrarErroInline,
+  limparErroInline,
+  garantirErroInline,
+} from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
+import {
+  mostrarNotificacao,
+  persistirNotificacaoParaProximaTela,
+} from './notification.js';
 import {
   formatarValor,
   capitalizar,
   criarCardsHTML,
+  criarBotoesAcao,
   calcularTotalItens,
   $,
   setHTMLById,
@@ -26,13 +38,11 @@ const URL_LISTA_DESEJOS = `${window.location.origin}/lista-desejos`;
 const URL_CATEGORIAS = `${window.location.origin}/categorias`;
 const URL_CONTAS = `${window.location.origin}/contas`;
 const URL_TRANSACOES = `${window.location.origin}/transacoes`;
+const FORM_ERRO_ID = 'formErroInlineListaDesejo';
+const FORM_MSG_ERRO_ID = 'formMensagemErroListaDesejo';
 
 async function carregarDesejos() {
   return apiFetch(URL_LISTA_DESEJOS);
-}
-
-function mostrarErroValidacao(mensagem) {
-  abrirModalErro(mensagem);
 }
 
 function resetarFormularioDesejo(form) {
@@ -45,16 +55,37 @@ function resetarFormularioDesejo(form) {
 export async function criarDesejo(formId = 'formListaDesejo') {
   const form = $(formId);
   if (!form) return;
+  form.noValidate = true;
+  garantirErroInline(form, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    limparErroInline(FORM_ERRO_ID, FORM_MSG_ERRO_ID);
+
+    const botaoClicado = e.submitter;
+    const acao = botaoClicado?.getAttribute('data-action');
+    const tituloDesejo = form.titulo.value;
 
     const categoria = $('categoria')?.value;
     const tipoDespesa = $('tipoDespesa')?.value;
+    const valor = Number(form.valor.value);
 
     // Valida que categoria foi selecionada (campo obrigatório)
+    if (!tituloDesejo || !valor) {
+      mostrarErroInline(
+        'Por favor, preencha todos os campos obrigatórios',
+        FORM_ERRO_ID,
+        FORM_MSG_ERRO_ID
+      );
+      return;
+    }
+
     if (!categoria) {
-      mostrarErroValidacao('Por favor, selecione uma categoria');
+      mostrarErroInline(
+        'Por favor, selecione uma categoria',
+        FORM_ERRO_ID,
+        FORM_MSG_ERRO_ID
+      );
       return;
     }
 
@@ -63,7 +94,7 @@ export async function criarDesejo(formId = 'formListaDesejo') {
       await apiFetch(URL_LISTA_DESEJOS, {
         method: 'POST',
         body: JSON.stringify({
-          titulo: form.titulo.value,
+          titulo: tituloDesejo,
           valor: Number(form.valor.value),
           categoria,
           tipoDespesa: tipoDespesa || undefined,
@@ -71,13 +102,21 @@ export async function criarDesejo(formId = 'formListaDesejo') {
         }),
       });
 
-      // Reseta estado do formulário
-      resetarFormularioDesejo(form);
-
-      // Atualiza listagem na tela
-      listarDesejos();
+      if (acao === 'salvar-adicionar-outro') {
+        mostrarNotificacao(`Desejo "${tituloDesejo}" adicionado com sucesso!`);
+        resetarFormularioDesejo(form);
+      } else if (window.location.pathname.includes('adicionar-lista-desejo')) {
+        persistirNotificacaoParaProximaTela(
+          `Desejo "${tituloDesejo}" adicionado com sucesso!`
+        );
+        window.location.href = '/html/lista-desejos.html';
+      } else {
+        mostrarNotificacao(`Desejo "${tituloDesejo}" adicionado com sucesso!`);
+        resetarFormularioDesejo(form);
+        listarDesejos();
+      }
     } catch (erro) {
-      mostrarErroValidacao(erro.message || 'Erro ao criar desejo');
+      mostrarNotificacao(erro.message || 'Erro ao criar desejo', 'erro');
     }
   });
 }
@@ -132,15 +171,27 @@ function criarCardDesejo(d) {
       </div>
 
       <div class="transacao-acoes">
-        <button class="btn-realizar" onclick="realizarDesejo('${d._id}')" title="Realizar compra">
-          <i class="fa-solid fa-circle-check"></i> Realizar
-        </button>
-        <button class="btn-editar" onclick="editarDesejo('${d._id}')" title="Editar">
-          <i class="fa-solid fa-pen"></i>
-        </button>
-        <button class="btn-deletar" onclick="deletarDesejo('${d._id}')" title="Deletar">
-          <i class="fa-solid fa-trash"></i>
-        </button>
+        ${criarBotoesAcao([
+          {
+            classe: 'btn-realizar',
+            onclick: `realizarDesejo('${d._id}')`,
+            icone: 'fa-circle-check',
+            title: 'Realizar compra',
+            texto: 'Realizar',
+          },
+          {
+            classe: 'btn-editar',
+            onclick: `editarDesejo('${d._id}')`,
+            icone: 'fa-pen',
+            title: 'Editar',
+          },
+          {
+            classe: 'btn-deletar',
+            onclick: `deletarDesejo('${d._id}')`,
+            icone: 'fa-trash',
+            title: 'Deletar',
+          },
+        ])}
       </div>
     </div>
   `;

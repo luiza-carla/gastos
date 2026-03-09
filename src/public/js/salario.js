@@ -1,9 +1,21 @@
 import { apiFetch } from './config.js';
-import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
+import {
+  abrirModal,
+  fecharModal,
+  abrirModalErro,
+  mostrarErroInline,
+  limparErroInline,
+  garantirErroInline,
+} from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
+import {
+  mostrarNotificacao,
+  persistirNotificacaoParaProximaTela,
+} from './notification.js';
 import {
   formatarValor,
   criarCardsHTML,
+  criarBotoesAcao,
   $,
   clearElement,
   setHTMLById,
@@ -13,6 +25,8 @@ import { carregarResumo } from './inicio.js';
 
 // URL base da API de salarios
 const salarioBaseUrl = window.location.origin + '/salarios';
+const FORM_ERRO_ID = 'formErroInlineSalario';
+const FORM_MSG_ERRO_ID = 'formMensagemErroSalario';
 
 // Popula select com dias possiveis de recebimento
 function popularSelectDiasRecebimento(
@@ -51,31 +65,61 @@ async function atualizarVisoesRelacionadas() {
 export function criarSalario(formId = 'formSalario', callback) {
   const form = $(formId);
   if (!form) return;
+  form.noValidate = true;
+  garantirErroInline(form, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
 
   popularSelectDiasRecebimento();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    limparErroInline(FORM_ERRO_ID, FORM_MSG_ERRO_ID);
+
+    const botaoClicado = e.submitter;
+    const acao = botaoClicado?.getAttribute('data-action');
 
     const valor = $('valor')?.value;
     const diaRecebimento = $('diaRecebimento')?.value;
     const conta = $('contaSalario')?.value;
 
-    await apiFetch(salarioBaseUrl, {
-      method: 'POST',
-      body: JSON.stringify({
-        valor: Number(valor),
-        diaRecebimento: Number(diaRecebimento),
-        frequencia: 'mensal',
-        conta: conta || null,
-      }),
-    });
+    if (!Number(valor) || !diaRecebimento) {
+      mostrarErroInline(
+        'Por favor, preencha todos os campos obrigatórios',
+        FORM_ERRO_ID,
+        FORM_MSG_ERRO_ID
+      );
+      return;
+    }
 
-    form.reset();
+    try {
+      await apiFetch(salarioBaseUrl, {
+        method: 'POST',
+        body: JSON.stringify({
+          valor: Number(valor),
+          diaRecebimento: Number(diaRecebimento),
+          frequencia: 'mensal',
+          conta: conta || null,
+        }),
+      });
 
-    await listarSalarios();
-    await atualizarVisoesRelacionadas();
-    if (callback) callback();
+      if (acao === 'salvar-adicionar-outro') {
+        mostrarNotificacao(`Salário de R$ ${valor} adicionado com sucesso!`);
+        form.reset();
+      } else if (window.location.pathname.includes('adicionar-salario')) {
+        persistirNotificacaoParaProximaTela(
+          `Salário de R$ ${valor} adicionado com sucesso!`
+        );
+        window.location.href = '/html/salario.html';
+      } else {
+        mostrarNotificacao(`Salário de R$ ${valor} adicionado com sucesso!`);
+        form.reset();
+        await listarSalarios();
+        await atualizarVisoesRelacionadas();
+      }
+
+      if (callback) callback();
+    } catch (erro) {
+      mostrarNotificacao(erro.message || 'Erro ao criar salário', 'erro');
+    }
   });
 }
 
@@ -101,15 +145,18 @@ export async function listarSalarios() {
         </div>
 
         <div class="acoes-salario">
-
-          <button class="btn-editar" onclick="editarSalario('${s._id}', ${s.valor}, ${diaRecebimento})">
-            <i class="fa-solid fa-pen"></i>
-          </button>
-
-          <button class="btn-deletar" onclick="deletarSalario('${s._id}')">
-            <i class="fa-solid fa-trash"></i>
-          </button>
-
+          ${criarBotoesAcao([
+            {
+              classe: 'btn-editar',
+              onclick: `editarSalario('${s._id}', ${s.valor}, ${diaRecebimento})`,
+              icone: 'fa-pen',
+            },
+            {
+              classe: 'btn-deletar',
+              onclick: `deletarSalario('${s._id}')`,
+              icone: 'fa-trash',
+            },
+          ])}
         </div>
 
       </div>
@@ -165,25 +212,32 @@ window.editarSalario = (id, valor, diaRecebimento) => {
     `,
 
     onSalvar: async () => {
-      const novoValor = Number(
-        document.getElementById('modalValorSalario')?.value
-      );
-      const novoDiaRecebimento = Number(
-        document.getElementById('modalDiaRecebimento')?.value
-      );
+      limparErroInline();
 
-      await apiFetch(`${salarioBaseUrl}/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          valor: novoValor,
-          diaRecebimento: novoDiaRecebimento,
-          frequencia: 'mensal',
-        }),
-      });
+      const novoValor = Number($('modalValorSalario')?.value);
+      const novoDiaRecebimento = Number($('modalDiaRecebimento')?.value);
 
-      fecharModal();
-      await listarSalarios();
-      await atualizarVisoesRelacionadas();
+      if (!novoValor || !novoDiaRecebimento) {
+        mostrarErroInline('Por favor, preencha todos os campos obrigatórios');
+        return;
+      }
+
+      try {
+        await apiFetch(`${salarioBaseUrl}/${id}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            valor: novoValor,
+            diaRecebimento: novoDiaRecebimento,
+            frequencia: 'mensal',
+          }),
+        });
+
+        fecharModal();
+        await listarSalarios();
+        await atualizarVisoesRelacionadas();
+      } catch (err) {
+        mostrarErroInline(err.message || 'Erro ao atualizar salário');
+      }
     },
   });
 };

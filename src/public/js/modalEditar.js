@@ -1,7 +1,7 @@
 import {
   setHTMLById,
-  showElement,
-  hideElement,
+  showById,
+  hideById,
   showModal,
   hideModal,
   addClass,
@@ -12,12 +12,21 @@ import {
 // Armazena callback de salvamento do modal
 let salvarCallback = null;
 
+function definirFooterModal(tipo) {
+  hideById('modalFooterEditar');
+  hideById('modalFooterConfirmar');
+  hideById('modalFooterErro');
+
+  if (tipo === 'editar') showById('modalFooterEditar');
+  if (tipo === 'confirmar') showById('modalFooterConfirmar');
+  if (tipo === 'erro') showById('modalFooterErro');
+}
+
 // Abre modal de edicao com titulo e conteudo personalizados
 export function abrirModal({ titulo, conteudoHTML, onSalvar }) {
-  // Atualiza titulo e conteudo do modal
-  const modal = $('modalGlobal');
-  const tituloEl = $('modalTitulo');
+  limparErroInline();
 
+  // Atualiza titulo e conteudo do modal
   setHTMLById(
     'modalTitulo',
     `<i class="fa-solid fa-pen-to-square"></i> ${titulo}`
@@ -28,21 +37,21 @@ export function abrirModal({ titulo, conteudoHTML, onSalvar }) {
   salvarCallback = onSalvar;
 
   // Ajusta botoes exibidos no modal
-  showElement($('modalFooterEditar'));
-  hideElement($('modalFooterConfirmar'));
-  hideElement($('modalFooterErro'));
+  definirFooterModal('editar');
 
   showModal();
 }
 
 // Fecha modal global
 export function fecharModal() {
+  limparErroInline();
+  salvarCallback = null;
   hideModal();
 }
 
 // Abre modal de erro com mensagem informada
 export function abrirModalErro(mensagem) {
-  const tituloEl = $('modalTitulo');
+  limparErroInline();
 
   setHTMLById(
     'modalTitulo',
@@ -53,25 +62,48 @@ export function abrirModalErro(mensagem) {
     `<p style="margin: 0; padding: 10px 0; color: var(--cinza-texto); line-height: 1.6;">${mensagem}</p>`
   );
 
-  hideElement($('modalFooterEditar'));
-  hideElement($('modalFooterConfirmar'));
-  showElement($('modalFooterErro'));
+  definirFooterModal('erro');
 
   showModal();
 }
 
-// Mostra erro inline dentro do modal de edição
-export function mostrarErroInline(mensagem) {
-  const erroEl = $('modalErroInline');
-  setHTMLById('modalMensagemErro', mensagem);
+// Mostra erro inline no modal (padrao) ou em alvo customizado
+export function mostrarErroInline(
+  mensagem,
+  erroId = 'modalErroInline',
+  mensagemId = 'modalMensagemErro'
+) {
+  const erroEl = $(erroId);
+  setHTMLById(mensagemId, mensagem);
   if (erroEl) addClass(erroEl, 'ativo');
 }
 
-// Limpa erros inline do modal
-export function limparErroInline() {
-  const erroEl = $('modalErroInline');
+// Limpa erro inline no modal (padrao) ou em alvo customizado
+export function limparErroInline(
+  erroId = 'modalErroInline',
+  mensagemId = 'modalMensagemErro'
+) {
+  const erroEl = $(erroId);
   if (erroEl) removeClass(erroEl, 'ativo');
-  setHTMLById('modalMensagemErro', '');
+  setHTMLById(mensagemId, '');
+}
+
+// Garante estrutura de erro inline no elemento informado
+export function garantirErroInline(
+  raizEl,
+  erroId = 'modalErroInline',
+  mensagemId = 'modalMensagemErro'
+) {
+  if (!raizEl || $(erroId)) return;
+
+  raizEl.insertAdjacentHTML(
+    'afterbegin',
+    `
+      <div id="${erroId}" class="modal-erro-inline">
+        <p id="${mensagemId}" class="modal-mensagem-erro"></p>
+      </div>
+    `
+  );
 }
 
 // Trata cliques dos botoes do modal

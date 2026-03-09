@@ -35,6 +35,22 @@
   --cinza-texto-claro: #999;
   --cinza-chip-bg: #f4f5f7;
   --cinza-chip-borda: #e5e7eb;
+
+  /* Cores de notificação */
+  --notificacao-sucesso-bg: #d4edda;
+  --notificacao-sucesso-texto: #155724;
+  --notificacao-sucesso-borda: #c3e6cb;
+  --notificacao-sucesso-icone: #28a745;
+
+  --notificacao-erro-bg: #f8d7da;
+  --notificacao-erro-texto: #721c24;
+  --notificacao-erro-borda: #f5c6cb;
+  --notificacao-erro-icone: #dc3545;
+
+  --notificacao-aviso-bg: #fff3cd;
+  --notificacao-aviso-texto: #856404;
+  --notificacao-aviso-borda: #ffeaa7;
+  --notificacao-aviso-icone: #ffc107;
 }
 
 body {

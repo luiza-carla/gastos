@@ -105,3 +105,28 @@ export function addClass(el, classe) {
 export function removeClass(el, classe) {
   if (el) el.classList.remove(classe);
 }
+
+// Cria options HTML para select a partir de array de itens
+export function criarOptionsHTML(items, valueFn, textFn, optionAtual = null) {
+  return items
+    .map((item) => {
+      const valor = valueFn ? valueFn(item) : item._id;
+      const texto = textFn ? textFn(item) : item.nome || '';
+      const selected = optionAtual === valor ? 'selected' : '';
+      return `<option value="${valor}" ${selected}>${texto}</option>`;
+    })
+    .join('');
+}
+
+// Cria botões de ação para cards (editar, deletar, etc)
+export function criarBotoesAcao(acoes) {
+  return acoes
+    .map(
+      (acao) => `
+    <button class="${acao.classe}" onclick="${acao.onclick}"${acao.title ? ` title="${acao.title}"` : ''}>
+      <i class="fa-solid ${acao.icone}"></i>${acao.texto ? ` ${acao.texto}` : ''}
+    </button>
+  `
+    )
+    .join('');
+}

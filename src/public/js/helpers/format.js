@@ -33,3 +33,14 @@ export function escaparHtml(texto = '') {
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 }
+
+// Formata item com tipo entre parênteses (ex: "Nubank (Corrente)")
+export function formatarItemComTipo(
+  item,
+  nomeProp = 'nome',
+  tipoProp = 'tipo'
+) {
+  const nome = item[nomeProp] || '';
+  const tipo = item[tipoProp] || '';
+  return `${escaparHtml(nome)} (${capitalizar(tipo)})`;
+}

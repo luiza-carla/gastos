@@ -1,20 +1,20 @@
 import {
   setHTMLById,
-  showElement,
-  hideElement,
+  showById,
+  hideById,
   showModal,
   hideModal,
-  $,
 } from './helpers/index.js';
+import { limparErroInline } from './modalEditar.js';
 
 // Armazena callback de confirmacao do modal
 let confirmarCallback = null;
 
 // Abre modal de confirmacao com titulo e mensagem
 export function abrirModalConfirmacao({ titulo, mensagem, onConfirmar }) {
-  // Atualiza titulo e conteudo do modal
-  const tituloEl = $('modalTitulo');
+  limparErroInline();
 
+  // Atualiza titulo e conteudo do modal
   setHTMLById(
     'modalTitulo',
     `<i class="fa-solid fa-triangle-exclamation" style="color: var(--vermelho-escuro);"></i> ${titulo}`
@@ -28,15 +28,17 @@ export function abrirModalConfirmacao({ titulo, mensagem, onConfirmar }) {
   confirmarCallback = onConfirmar;
 
   // Ajusta botoes exibidos no modal
-  hideElement($('modalFooterEditar'));
-  showElement($('modalFooterConfirmar'));
-  hideElement($('modalFooterErro'));
+  hideById('modalFooterEditar');
+  showById('modalFooterConfirmar');
+  hideById('modalFooterErro');
 
   showModal();
 }
 
 // Fecha modal global
 export function fecharModal() {
+  limparErroInline();
+  confirmarCallback = null;
   hideModal();
 }
 

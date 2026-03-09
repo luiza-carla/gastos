@@ -3,6 +3,7 @@
   <head>
     <title>Login</title>
     <link rel="stylesheet" href="../css/style.css" />
+    <link rel="stylesheet" href="../css/modal.css" />
     <link rel="stylesheet" href="../css/auth.css" />
   </head>
 
@@ -11,8 +12,16 @@
       <h2>Login</h2>
 
       <form id="formLogin">
-        <input placeholder="Email" id="loginEmail" type="email" required />
-        <input placeholder="Senha" id="loginSenha" type="password" required />
+        <div class="form-group">
+          <label for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" required />
+        </div>
+
+        <div class="form-group">
+          <label for="loginSenha">Senha</label>
+          <input id="loginSenha" type="password" required />
+        </div>
+
         <button type="submit">Login</button>
       </form>
 

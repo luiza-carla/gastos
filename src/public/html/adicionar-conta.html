@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Adicionar Conta</title>
+
+    <link rel="stylesheet" href="../css/base.css" />
+    <link rel="stylesheet" href="../css/conta.css" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <div id="menu"></div>
+
+    <main>
+      <div class="container">
+        <h2>
+          <i class="fa-solid fa-coins"></i>
+          Adicionar nova conta
+        </h2>
+
+        <form id="formConta" class="card">
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Nome da conta</label>
+              <input id="nome" required />
+            </div>
+
+            <div class="form-group">
+              <label>Tipo</label>
+              <select id="tipo" required>
+                <option value="" selected disabled>Selecione o tipo</option>
+                <option value="corrente">Corrente</option>
+                <option value="credito">Crédito</option>
+                <option value="investimento">Investimento</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label>Saldo inicial</label>
+              <input id="saldoInicial" type="number" step="0.01" />
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px;">
+            <button class="btn-salvar" type="submit" data-action="salvar-redirect">
+              <i class="fa-solid fa-plus"></i> Adicionar conta
+            </button>
+            <button class="btn-salvar" type="submit" data-action="salvar-adicionar-outro">
+              <i class="fa-solid fa-repeat"></i> Salvar e adicionar outro
+            </button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <script type="module" src="../js/conta.js"></script>
+    <script type="module" src="../js/init.js"></script>
+  </body>
+</html>

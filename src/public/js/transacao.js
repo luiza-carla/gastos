@@ -1,11 +1,23 @@
 import { apiFetch } from './config.js';
 import { limparCategoriaSelecionada } from './categoria.js';
-import { abrirModal, fecharModal, abrirModalErro, mostrarErroInline, limparErroInline } from './modalEditar.js';
+import {
+  abrirModal,
+  fecharModal,
+  abrirModalErro,
+  mostrarErroInline,
+  limparErroInline,
+  garantirErroInline,
+} from './modalEditar.js';
 import { abrirModalConfirmacao } from './modalDeletar.js';
+import {
+  mostrarNotificacao,
+  persistirNotificacaoParaProximaTela,
+} from './notification.js';
 import {
   formatarValor,
   capitalizar,
   criarCardsHTML,
+  criarBotoesAcao,
   calcularTotalItens,
   showById,
   hideById,
@@ -28,6 +40,8 @@ let tags = [];
 
 const URL_TRANSACOES = `${window.location.origin}/transacoes`;
 const URL_CATEGORIAS = `${window.location.origin}/categorias`;
+const FORM_ERRO_ID = 'formErroInlineTransacao';
+const FORM_MSG_ERRO_ID = 'formMensagemErroTransacao';
 
 function mostrarErroApi(erro, mensagemPadrao) {
   abrirModalErro(erro.message || mensagemPadrao);
@@ -57,6 +71,8 @@ export async function criarTransacao(formId = 'formTransacao') {
   const tipoDespesaSelect = $('tipoDespesaContainer')?.querySelector(
     '#tipoDespesa'
   );
+  if (form) form.noValidate = true;
+  garantirErroInline(form, FORM_ERRO_ID, FORM_MSG_ERRO_ID);
   const recorrenciaSelect = $('recorrencia');
   const parcelasContainer = $('parcelasContainer');
 
@@ -81,18 +97,42 @@ export async function criarTransacao(formId = 'formTransacao') {
   // Envia dados da transacao para API
   form?.addEventListener('submit', async (e) => {
     e.preventDefault();
+    limparErroInline(FORM_ERRO_ID, FORM_MSG_ERRO_ID);
+
+    const botaoClicado = e.submitter;
+    const acao = botaoClicado?.getAttribute('data-action');
+    const tituloTransacao = form.titulo.value;
 
     const conta = $('conta')?.value;
     const categoria = $('categoria')?.value;
     const tipoDespesa =
       tipoSelect.value === 'saida' ? tipoDespesaSelect.value : null;
+    const valor = Number(form.valor.value);
+
+    if (!tituloTransacao || !valor || !tipoSelect.value || !conta || !categoria) {
+      mostrarErroInline(
+        'Por favor, preencha todos os campos obrigatórios',
+        FORM_ERRO_ID,
+        FORM_MSG_ERRO_ID
+      );
+      return;
+    }
+
+    if (!form.status.value) {
+      mostrarErroInline(
+        'Por favor, selecione um status',
+        FORM_ERRO_ID,
+        FORM_MSG_ERRO_ID
+      );
+      return;
+    }
 
     try {
       await apiFetch(URL_TRANSACOES, {
         method: 'POST',
         body: JSON.stringify({
-          titulo: form.titulo.value,
-          valor: Number(form.valor.value),
+          titulo: tituloTransacao,
+          valor,
           tipo: tipoSelect.value,
           tipoDespesa,
           conta: conta,
@@ -107,11 +147,21 @@ export async function criarTransacao(formId = 'formTransacao') {
         }),
       });
 
-      resetarFormularioTransacao(form, tipoDespesaSelect, parcelasContainer);
-
-      listarTransacoes();
+      if (acao === 'salvar-adicionar-outro') {
+        mostrarNotificacao(`Transação "${tituloTransacao}" adicionada com sucesso!`);
+        resetarFormularioTransacao(form, tipoDespesaSelect, parcelasContainer);
+      } else if (window.location.pathname.includes('adicionar-transacao')) {
+        persistirNotificacaoParaProximaTela(
+          `Transação "${tituloTransacao}" adicionada com sucesso!`
+        );
+        window.location.href = '/html/transacoes.html';
+      } else {
+        mostrarNotificacao(`Transação "${tituloTransacao}" adicionada com sucesso!`);
+        resetarFormularioTransacao(form, tipoDespesaSelect, parcelasContainer);
+        listarTransacoes();
+      }
     } catch (erro) {
-      mostrarErroApi(erro, 'Erro ao criar transação');
+      mostrarNotificacao(erro.message || 'Erro ao criar transação', 'erro');
     }
   });
 }
@@ -235,12 +285,20 @@ function criarCardTransacao(t) {
       </div>
 
       <div class="transacao-acoes">
-        <button class="btn-editar" onclick="editarTransacao('${t._id}')" title="Editar">
-          <i class="fa-solid fa-pen"></i>
-        </button>
-        <button class="btn-deletar" onclick="deletarTransacao('${t._id}')" title="Deletar">
-          <i class="fa-solid fa-trash"></i>
-        </button>
+        ${criarBotoesAcao([
+          {
+            classe: 'btn-editar',
+            onclick: `editarTransacao('${t._id}')`,
+            icone: 'fa-pen',
+            title: 'Editar',
+          },
+          {
+            classe: 'btn-deletar',
+            onclick: `deletarTransacao('${t._id}')`,
+            icone: 'fa-trash',
+            title: 'Deletar',
+          },
+        ])}
       </div>
 
     </div>
