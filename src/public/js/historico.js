@@ -2,6 +2,8 @@ import { apiFetch } from './config.js';
 import {
   $,
   clearElement,
+  setHTMLById,
+  capitalizar,
   formatarData,
   formatarHora,
   formatarMoeda,
@@ -9,6 +11,7 @@ import {
   showElement,
   hideElement,
   escaparHtml,
+  criarCardsHTML,
   criarPaginacao,
 } from './helpers/index.js';
 import { mostrarNotificacao } from './notification.js';
@@ -90,8 +93,7 @@ async function carregarHistorico() {
     }
 
     renderizarHistorico();
-  } catch (error) {
-    console.error('Erro ao carregar histórico:', error);
+  } catch {
     mostrarNotificacao('Erro ao carregar histórico', 'erro');
   } finally {
     mostrarLoading(false);
@@ -105,31 +107,24 @@ function renderizarHistorico() {
 
   if (!lista) return;
 
-  clearElement(lista);
-
   if (state.historicos.length === 0) {
+    clearElement(lista);
     hideElement(lista);
     showElement(emptyState);
     return;
   }
 
+  setHTMLById(
+    'historico-lista',
+    criarCardsHTML(state.historicos, criarItemHistorico)
+  );
   showElement(lista);
   hideElement(emptyState);
-
-  state.historicos.forEach((historico) => {
-    const item = criarItemHistorico(historico);
-    lista.appendChild(item);
-  });
 }
 
 function criarItemHistorico(historico) {
-  const div = document.createElement('div');
-  div.className = `historico-item acao-${historico.acao}`;
-  div.dataset.historicoId = historico._id;
-
-  if (historico.desfeito) {
-    div.classList.add('historico-desfeito');
-  }
+  const historicoId = escaparHtml(String(historico._id || ''));
+  const classes = `historico-item acao-${historico.acao}${historico.desfeito ? ' historico-desfeito' : ''}`;
 
   const dataFormatada = formatarData(historico.createdAt);
   const horaFormatada = formatarHora(historico.createdAt);
@@ -138,31 +133,33 @@ function criarItemHistorico(historico) {
   const acaoLabel = traduzirAcao(historico.acao);
 
   const btnDesfazer = !historico.desfeito
-    ? `<button class="btn-desfazer" data-historico-id="${historico._id}">
+    ? `<button class="btn-desfazer" data-historico-id="${historicoId}">
          <i class="fa-solid fa-rotate-left"></i> Desfazer
        </button>`
     : '<span class="badge-desfeito">Desfeito</span>';
 
   const detalhesEdicaoHtml = gerarDetalhesEdicao(historico);
+  const detalhesObjetoHtml = gerarDetalhesObjeto(historico);
 
-  div.innerHTML = `
-    <div class="historico-item-header">
-      <div class="historico-item-info">
-        <div class="historico-descricao">${escaparHtml(historico.descricao || '')}</div>
-        <div class="historico-meta">
-          <span>${dataFormatada} às ${horaFormatada}</span>
+  return `
+    <div class="${classes}" data-historico-id="${historicoId}">
+      <div class="historico-item-header">
+        <div class="historico-item-info">
+          <div class="historico-descricao">${escaparHtml(historico.descricao || '')}</div>
+          <div class="historico-meta">
+            <span>${dataFormatada} às ${horaFormatada}</span>
+          </div>
+        </div>
+        <div class="historico-actions">
+          <span class="historico-badge badge-${historico.acao}">${acaoLabel}</span>
+          <span class="historico-badge badge-entidade">${entidadeLabel}</span>
+          ${btnDesfazer}
         </div>
       </div>
-      <div class="historico-actions">
-        <span class="historico-badge badge-${historico.acao}">${acaoLabel}</span>
-        <span class="historico-badge badge-entidade">${entidadeLabel}</span>
-        ${btnDesfazer}
-      </div>
+      ${detalhesObjetoHtml}
+      ${detalhesEdicaoHtml}
     </div>
-    ${detalhesEdicaoHtml}
   `;
-
-  return div;
 }
 
 const CAMPOS_OCULTOS_ALTERACAO = new Set([
@@ -190,6 +187,28 @@ const LABEL_CAMPO_ALTERACAO = {
   ativa: 'Ativa',
   saldo: 'Saldo',
   nome: 'Nome',
+};
+
+const TITULO_POR_ACAO_OBJETO = {
+  criacao: 'Objeto criado',
+  edicao: 'Objeto editado',
+  delecao: 'Objeto deletado',
+  realizacao: 'Objeto realizado',
+  transferencia: 'Transferência',
+};
+
+const FONTE_DADOS_PRIORITARIA_POR_ACAO = {
+  criacao: 'dadosNovos',
+  edicao: 'dadosNovos',
+  delecao: 'dadosAnteriores',
+};
+
+const FORMATADORES_OBJETO = {
+  transacao: formatarObjetoTransacao,
+  conta: formatarObjetoConta,
+  listaDesejo: formatarObjetoListaDesejo,
+  salario: formatarObjetoTransacao,
+  carteira: formatarObjetoCarteira,
 };
 
 // Renderiza o bloco de "Antes/Depois" apenas para ações de edição.
@@ -237,6 +256,190 @@ function gerarDetalhesEdicao(historico) {
         ${itensHtml}
       </div>
     </div>
+  `;
+}
+
+// Renderiza o objeto alterado (transação, conta, lista de desejo, etc.)
+function gerarDetalhesObjeto(historico) {
+  const { acao, entidade, objeto } = historico;
+  const fontePrioritaria = FONTE_DADOS_PRIORITARIA_POR_ACAO[acao];
+  const snapshot = fontePrioritaria ? historico[fontePrioritaria] : null;
+  const objetoParaExibir = snapshot || objeto;
+
+  if (!objetoParaExibir) {
+    return '';
+  }
+
+  const titulo = TITULO_POR_ACAO_OBJETO[acao] || 'Objeto atual';
+
+  return gerarDetalhesObjetoHtml({
+    objeto: objetoParaExibir,
+    entidade,
+    titulo,
+  });
+}
+
+// Gera HTML para exibir detalhes do objeto
+function gerarDetalhesObjetoHtml({ objeto, entidade, titulo }) {
+  if (!objeto) {
+    return '';
+  }
+
+  const formatador = FORMATADORES_OBJETO[entidade];
+  if (!formatador) {
+    return '';
+  }
+
+  const conteudoHtml = formatador(objeto);
+
+  return `
+    <div class="historico-objeto">
+      <div class="historico-objeto-titulo">${escaparHtml(titulo)}</div>
+      <div class="historico-objeto-conteudo">
+        ${conteudoHtml}
+      </div>
+    </div>
+  `;
+}
+
+function renderCampoObjeto(label, valor, escape = true) {
+  if (valor === undefined || valor === null || valor === '') {
+    return '';
+  }
+
+  const valorFormatado = escape ? escaparHtml(String(valor)) : String(valor);
+  return `<div class="objeto-campo"><strong>${label}:</strong> ${valorFormatado}</div>`;
+}
+
+function obterNomeRelacionado(valor) {
+  if (!valor) return '';
+  if (typeof valor === 'object') return valor.nome || '';
+  return '';
+}
+
+function formatarObjetoTransacao(transacao) {
+  if (!transacao) {
+    return '<div class="objeto-campo">Objeto não disponível</div>';
+  }
+
+  const categoria = obterNomeRelacionado(transacao.categoria);
+  const conta = obterNomeRelacionado(transacao.conta);
+
+  const campos = [];
+
+  campos.push(renderCampoObjeto('Título', transacao.titulo));
+
+  if (transacao.tipo) {
+    campos.push(renderCampoObjeto('Tipo', capitalizar(transacao.tipo), false));
+  }
+
+  if (transacao.valor !== undefined && transacao.valor !== null) {
+    campos.push(
+      renderCampoObjeto('Valor', formatarMoeda(transacao.valor), false)
+    );
+  }
+
+  campos.push(renderCampoObjeto('Categoria', categoria));
+
+  if (transacao.fonteSaldo === 'carteira') {
+    campos.push(renderCampoObjeto('Conta', 'Carteira', false));
+  } else if (conta) {
+    campos.push(renderCampoObjeto('Conta', conta));
+  }
+
+  if (transacao.status) {
+    campos.push(
+      renderCampoObjeto('Status', capitalizar(transacao.status), false)
+    );
+  }
+
+  if (transacao.data) {
+    campos.push(renderCampoObjeto('Data', formatarData(transacao.data), false));
+  }
+
+  let detalhes = campos.filter(Boolean).join('');
+
+  if (transacao.tags && transacao.tags.length > 0) {
+    const tags = transacao.tags
+      .map((tag) => `<span class="tag-badge">${escaparHtml(tag)}</span>`)
+      .join(' ');
+    detalhes += `<div class="objeto-campo"><strong>Tags:</strong> ${tags}</div>`;
+  }
+
+  return detalhes || '<div class="objeto-campo">Sem detalhes para exibir</div>';
+}
+
+function formatarObjetoConta(conta) {
+  if (!conta) {
+    return '<div class="objeto-campo">Objeto não disponível</div>';
+  }
+
+  const tipo =
+    conta.tipo === 'corrente'
+      ? 'Corrente'
+      : conta.tipo === 'poupanca'
+        ? 'Poupança'
+        : 'Outro';
+  const saldo = formatarMoeda(conta.saldo || 0);
+  const ativa = conta.ativa ? 'Sim' : 'Não';
+
+  return `
+    ${renderCampoObjeto('Nome', conta.nome || '')}
+    ${renderCampoObjeto('Tipo', tipo, false)}
+    ${renderCampoObjeto('Saldo', saldo, false)}
+    ${renderCampoObjeto('Ativa', ativa, false)}
+  `;
+}
+
+function formatarObjetoListaDesejo(item) {
+  if (!item) {
+    return '<div class="objeto-campo">Objeto não disponível</div>';
+  }
+
+  const categoria = obterNomeRelacionado(item.categoria);
+
+  const campos = [];
+
+  campos.push(renderCampoObjeto('Título', item.titulo));
+
+  if (item.preco !== undefined && item.preco !== null) {
+    campos.push(renderCampoObjeto('Preço', formatarMoeda(item.preco), false));
+  }
+
+  campos.push(renderCampoObjeto('Categoria', categoria));
+
+  if (
+    item.valorEconomizado !== undefined &&
+    item.valorEconomizado !== null &&
+    item.preco
+  ) {
+    const progresso = ((item.valorEconomizado / item.preco) * 100).toFixed(1);
+    campos.push(
+      renderCampoObjeto(
+        'Economizado',
+        `${formatarMoeda(item.valorEconomizado)} (${progresso}%)`,
+        false
+      )
+    );
+  }
+
+  campos.push(renderCampoObjeto('Descrição', item.descricao));
+
+  return (
+    campos.filter(Boolean).join('') ||
+    '<div class="objeto-campo">Sem detalhes para exibir</div>'
+  );
+}
+
+function formatarObjetoCarteira(carteira) {
+  if (!carteira) {
+    return '<div class="objeto-campo">Objeto não disponível</div>';
+  }
+
+  const saldo = formatarMoeda(carteira.saldo || 0);
+
+  return `
+    ${renderCampoObjeto('Saldo', saldo, false)}
   `;
 }
 
@@ -624,7 +827,6 @@ async function desfazerAcao(historicoId) {
     // Recarrega lista e estado visual após reversão.
     await carregarHistorico();
   } catch (error) {
-    console.error('Erro ao desfazer ação:', error);
     mostrarNotificacao(error.message || 'Erro ao desfazer ação', 'erro');
   }
 }

@@ -1,10 +1,11 @@
 const Historico = require('../models/Historico');
+const Usuario = require('../models/Usuario');
 const Transacao = require('../models/Transacao');
 const Conta = require('../models/Conta');
 const Carteira = require('../models/Carteira');
 const ListaDesejo = require('../models/ListaDesejo');
 const { conjugarAcao, formatarMoeda } = require('../utils/stringHelpers');
-const { criarErro } = require('../utils/errorHelpers');
+const { criarErro, fallbackComErro } = require('../utils/errorHelpers');
 const {
   salarioJaProcessadoNoMes,
   extrairDestinoSaldo,
@@ -14,6 +15,17 @@ const {
 } = require('../utils/historicoDescricao');
 
 class HistoricoService {
+  static _anexarDescricaoEObjeto(historico, objeto = null) {
+    return {
+      ...historico,
+      descricao: formatarDescricaoHistoricoPadrao(
+        historico.acao,
+        historico.entidade
+      ),
+      objeto,
+    };
+  }
+
   static _garantirDadosAnteriores(dadosAnteriores) {
     if (!dadosAnteriores) {
       throw criarErro(400, 'Dados anteriores não disponíveis');
@@ -95,9 +107,43 @@ class HistoricoService {
       await historico.save();
       return historico;
     } catch (error) {
-      console.error('Erro ao registrar histórico:', error);
       // Não lançamos erro para não interromper a operação principal
+      return fallbackComErro(error, 'Erro ao registrar histórico', null);
+    }
+  }
+
+  // Busca o objeto relacionado ao histórico
+  static async _buscarObjetoRelacionado(entidade, entidadeId) {
+    if (!entidadeId) {
       return null;
+    }
+
+    try {
+      if (entidade === 'transacao' || entidade === 'salario') {
+        return await Transacao.findById(entidadeId)
+          .populate('conta', 'nome tipo')
+          .populate('categoria', 'nome cor tipo')
+          .lean();
+      }
+
+      switch (entidade) {
+        case 'conta':
+          return await Conta.findById(entidadeId).lean();
+        case 'carteira':
+          return await Carteira.findById(entidadeId).lean();
+        case 'listaDesejo':
+          return await ListaDesejo.findById(entidadeId)
+            .populate('categoria', 'nome cor tipo')
+            .lean();
+        default:
+          return null;
+      }
+    } catch (error) {
+      return fallbackComErro(
+        error,
+        `Erro ao buscar objeto relacionado (${entidade}/${entidadeId})`,
+        null
+      );
     }
   }
 
@@ -126,18 +172,32 @@ class HistoricoService {
       .skip(skip)
       .lean();
 
-    const historicosNormalizados = historicos.map((historico) => ({
-      ...historico,
-      descricao: formatarDescricaoHistoricoPadrao(
-        historico.acao,
-        historico.entidade
-      ),
-    }));
+    // Evita consultas repetidas quando varios historicos apontam para o mesmo objeto.
+    const cacheObjetos = new Map();
+
+    const historicosComObjetos = await Promise.all(
+      historicos.map(async (historico) => {
+        const chaveCache = `${historico.entidade}:${historico.entidadeId}`;
+
+        if (!cacheObjetos.has(chaveCache)) {
+          const objetoRelacionado = await this._buscarObjetoRelacionado(
+            historico.entidade,
+            historico.entidadeId
+          );
+          cacheObjetos.set(chaveCache, objetoRelacionado);
+        }
+
+        return this._anexarDescricaoEObjeto(
+          historico,
+          cacheObjetos.get(chaveCache)
+        );
+      })
+    );
 
     const total = await Historico.countDocuments(query);
 
     return {
-      historicos: historicosNormalizados,
+      historicos: historicosComObjetos,
       total,
       limit,
       skip,
@@ -153,23 +213,89 @@ class HistoricoService {
       .sort({ createdAt: -1 })
       .lean();
 
-    return historicos.map((historico) => ({
-      ...historico,
-      descricao: formatarDescricaoHistoricoPadrao(
-        historico.acao,
-        historico.entidade
-      ),
-    }));
+    // Busca o objeto relacionado uma única vez
+    const objeto = await this._buscarObjetoRelacionado(entidade, entidadeId);
+
+    return historicos.map((historico) =>
+      this._anexarDescricaoEObjeto(historico, objeto)
+    );
   }
 
-  // Limpa histórico antigo (mais de X dias)
-  static async limparAntigo(dias = 90) {
+  // Limpa histórico antigo após a conta completar X dias de criação.
+  static async limparAntigo(dias = 30) {
+    if (dias <= 0) {
+      throw criarErro(400, 'Dias deve ser um número positivo');
+    }
+
     const dataLimite = new Date();
     dataLimite.setDate(dataLimite.getDate() - dias);
 
+    // Só participa da limpeza quem já tem conta criada há pelo menos X dias.
+    const usuariosElegiveis = await Usuario.find(
+      { createdAt: { $lte: dataLimite } },
+      { _id: 1 }
+    ).lean();
+
+    if (usuariosElegiveis.length === 0) {
+      return 0;
+    }
+
+    const usuariosIds = usuariosElegiveis.map((usuario) => usuario._id);
+
     const resultado = await Historico.deleteMany({
+      usuario: { $in: usuariosIds },
       createdAt: { $lt: dataLimite },
     });
+
+    return resultado.deletedCount;
+  }
+
+  // Limpa histórico a cada X dias desde a última limpeza (ou criação da conta).
+  static async limparPorCiclo(diasCiclo = 30, diasRetencao = 30) {
+    if (diasCiclo <= 0 || diasRetencao <= 0) {
+      throw criarErro(
+        400,
+        'Dias de ciclo e retenção devem ser números positivos'
+      );
+    }
+
+    const hoje = new Date();
+    const dataLimiteCiclo = new Date();
+    dataLimiteCiclo.setDate(dataLimiteCiclo.getDate() - diasCiclo);
+
+    // Busca usuários que precisam de limpeza:
+    // - ultimaLimpezaHistorico existe e passou o ciclo, OU
+    // - ultimaLimpezaHistorico não existe e a conta tem mais de X dias
+    const usuarios = await Usuario.find({
+      $or: [
+        { ultimaLimpezaHistorico: { $lte: dataLimiteCiclo } },
+        {
+          ultimaLimpezaHistorico: null,
+          createdAt: { $lte: dataLimiteCiclo },
+        },
+      ],
+    }).lean();
+
+    if (usuarios.length === 0) {
+      return 0;
+    }
+
+    const usuariosIds = usuarios.map((u) => u._id);
+
+    // Apaga históricos com mais de X dias (retenção)
+    const dataLimiteRetencao = new Date();
+    dataLimiteRetencao.setDate(dataLimiteRetencao.getDate() - diasRetencao);
+
+    const resultado = await Historico.deleteMany({
+      usuario: { $in: usuariosIds },
+      createdAt: { $lt: dataLimiteRetencao },
+    });
+
+    // Atualiza a data da última limpeza para todos os usuários processados
+    await Usuario.updateMany(
+      { _id: { $in: usuariosIds } },
+      { $set: { ultimaLimpezaHistorico: hoje } }
+    );
 
     return resultado.deletedCount;
   }
@@ -235,26 +361,15 @@ class HistoricoService {
       throw criarErro(409, 'Esta ação já foi desfeita');
     }
 
-    // Reverte a ação dependendo do tipo
-    try {
-      await this._reverterAcao(historico);
+    // Reverte a ação; erros sobem para o middleware global de erro
+    await this._reverterAcao(historico);
 
-      // Marca como desfeito
-      historico.desfeito = true;
-      historico.desfeitoEm = new Date();
-      await historico.save();
+    // Marca como desfeito
+    historico.desfeito = true;
+    historico.desfeitoEm = new Date();
+    await historico.save();
 
-      return { success: true, message: 'Ação desfeita com sucesso' };
-    } catch (error) {
-      console.error('Erro ao desfazer ação:', error);
-      const status = error.statusCode || error.status || 500;
-      const erro = criarErro(
-        status,
-        `Não foi possível desfazer: ${error.message}`
-      );
-      erro.cause = error;
-      throw erro;
-    }
+    return { success: true, message: 'Ação desfeita com sucesso' };
   }
 
   // Reverte uma ação específica

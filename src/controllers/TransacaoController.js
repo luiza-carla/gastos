@@ -225,9 +225,7 @@ class TransacaoController {
     );
 
     if (!transacaoAntiga) {
-      return res
-        .status(404)
-        .json({ mensagem: MENSAGEM_TRANSACAO_NAO_ENCONTRADA });
+      throw criarErro(404, MENSAGEM_TRANSACAO_NAO_ENCONTRADA);
     }
 
     const updateData = { ...req.body };
@@ -291,9 +289,7 @@ class TransacaoController {
     );
 
     if (!transacao) {
-      return res
-        .status(404)
-        .json({ mensagem: MENSAGEM_TRANSACAO_NAO_ENCONTRADA });
+      throw criarErro(404, MENSAGEM_TRANSACAO_NAO_ENCONTRADA);
     }
 
     // Reverte saldo da conta se transação estava paga

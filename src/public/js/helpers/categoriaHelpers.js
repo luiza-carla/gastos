@@ -7,6 +7,7 @@ import {
   $,
   showElement,
   hideElement,
+  warn,
 } from './index.js';
 
 // Configura autocomplete de categorias reutilizável para modais
@@ -22,7 +23,10 @@ export function setupCategoriaAutocomplete(
   const dropdown = $(dropdownId);
 
   if (!inputBusca || !inputHidden || !dropdown) {
-    console.warn(`Categoria autocomplete não inicializado: ${inputId}`);
+    warn(
+      `Categoria autocomplete não inicializado: ${inputId}`,
+      'categoriaHelpers'
+    );
     return;
   }
 

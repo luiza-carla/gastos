@@ -17,6 +17,11 @@ const UsuarioSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+
+    ultimaLimpezaHistorico: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );

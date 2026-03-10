@@ -1,4 +1,5 @@
 const Categoria = require('../models/Categoria');
+const logger = require('./logger');
 
 // Função para garantir que categorias padrão existem no banco
 async function garantirCategoriasPadrao() {
@@ -66,7 +67,7 @@ async function garantirCategoriasPadrao() {
   }
 
   // Log de confirmação
-  console.log('Categorias padrão garantidas');
+  logger.info('Categorias padrao garantidas', 'seedCategoria');
 }
 
 module.exports = garantirCategoriasPadrao;

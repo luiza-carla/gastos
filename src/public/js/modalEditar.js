@@ -1,7 +1,7 @@
 import {
   setHTMLById,
-  showById,
-  hideById,
+  showElement,
+  hideElement,
   showModal,
   hideModal,
   addClass,
@@ -13,13 +13,13 @@ import {
 let salvarCallback = null;
 
 function definirFooterModal(tipo) {
-  hideById('modalFooterEditar');
-  hideById('modalFooterConfirmar');
-  hideById('modalFooterErro');
+  hideElement($('modalFooterEditar'));
+  hideElement($('modalFooterConfirmar'));
+  hideElement($('modalFooterErro'));
 
-  if (tipo === 'editar') showById('modalFooterEditar');
-  if (tipo === 'confirmar') showById('modalFooterConfirmar');
-  if (tipo === 'erro') showById('modalFooterErro');
+  if (tipo === 'editar') showElement($('modalFooterEditar'));
+  if (tipo === 'confirmar') showElement($('modalFooterConfirmar'));
+  if (tipo === 'erro') showElement($('modalFooterErro'));
 }
 
 // Abre modal de edicao com titulo e conteudo personalizados

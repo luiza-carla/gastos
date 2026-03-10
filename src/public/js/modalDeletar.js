@@ -1,9 +1,10 @@
 import {
   setHTMLById,
-  showById,
-  hideById,
+  showElement,
+  hideElement,
   showModal,
   hideModal,
+  $,
 } from './helpers/index.js';
 import { limparErroInline } from './modalEditar.js';
 
@@ -28,9 +29,9 @@ export function abrirModalConfirmacao({ titulo, mensagem, onConfirmar }) {
   confirmarCallback = onConfirmar;
 
   // Ajusta botoes exibidos no modal
-  hideById('modalFooterEditar');
-  showById('modalFooterConfirmar');
-  hideById('modalFooterErro');
+  hideElement($('modalFooterEditar'));
+  showElement($('modalFooterConfirmar'));
+  hideElement($('modalFooterErro'));
 
   showModal();
 }

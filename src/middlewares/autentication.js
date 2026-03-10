@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { criarErro } = require('../utils/errorHelpers');
 
 // Middleware para verificar autenticação via token JWT
 function autenticacao(req, res, next) {
@@ -7,8 +8,7 @@ function autenticacao(req, res, next) {
 
   // Valida se token foi fornecido
   if (!authHeader) {
-    console.log('Token não fornecido');
-    return res.status(401).json({ mensagem: 'Token não fornecido' });
+    return next(criarErro(401, 'Token não fornecido'));
   }
 
   // Extrai token do formato "Bearer <token>"
@@ -20,11 +20,9 @@ function autenticacao(req, res, next) {
 
     // Armazena ID do usuário na requisição para uso posterior
     req.user = { id: decoded.id };
-    next();
-  } catch (erro) {
-    // Token inválido ou expirado
-    console.log('Token inválido ou expirado:', erro.message);
-    return res.status(401).json({ mensagem: 'Token inválido' });
+    return next();
+  } catch {
+    return next(criarErro(401, 'Token inválido'));
   }
 }
 

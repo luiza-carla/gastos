@@ -1,14 +1,15 @@
 import { apiFetch } from './config.js';
 import { abrirModal, fecharModal, abrirModalErro } from './modalEditar.js';
 import { formatarValor, capitalizar, escaparHtml, $ } from './helpers/index.js';
+import { mostrarNotificacao } from './notification.js';
 
 // Obtém dados de carteira do usuário
 export async function obterCarteira() {
   try {
     const carteira = await apiFetch('/carteira');
     return carteira;
-  } catch (err) {
-    console.error('Erro ao obter carteira:', err);
+  } catch {
+    mostrarNotificacao('Erro ao obter carteira', 'erro');
     return null;
   }
 }

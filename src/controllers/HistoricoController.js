@@ -62,7 +62,7 @@ class HistoricoController {
 
     res.json({
       success: true,
-      message: `${deletados} registros de histórico removidos`,
+      message: `${deletados} registros de histórico removidos (retenção: ${dias} dias)`,
       deletados,
     });
   }

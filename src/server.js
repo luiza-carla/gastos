@@ -3,6 +3,8 @@ const app = require('./app');
 const connectDB = require('./config/database');
 const garantirCategoriasPadrao = require('./utils/seedCategoria');
 const salarioScheduler = require('./services/SalarioScheduler');
+const historicoCleanupScheduler = require('./services/HistoricoCleanupScheduler');
+const logger = require('./utils/logger');
 
 async function iniciarServidor() {
   await connectDB();
@@ -12,9 +14,15 @@ async function iniciarServidor() {
   // Inicia agendador de salários recorrentes
   salarioScheduler.iniciar();
 
+  // Inicia limpeza automática do histórico
+  historicoCleanupScheduler.iniciar();
+
   app.listen(process.env.PORT, () => {
-    console.log('Servidor rodando');
+    logger.info('Servidor rodando', 'server');
   });
 }
 
-iniciarServidor();
+iniciarServidor().catch((error) => {
+  logger.error('Falha ao iniciar servidor', 'server', error);
+  process.exit(1);
+});

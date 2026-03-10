@@ -1,4 +1,5 @@
 const Transacao = require('../models/Transacao');
+const { criarErro } = require('../utils/errorHelpers');
 
 class TransacaoService {
   // Cria nova transação
@@ -27,9 +28,7 @@ class TransacaoService {
     );
 
     if (!transacao) {
-      const erro = new Error('Transação não encontrada');
-      erro.statusCode = 404;
-      throw erro;
+      throw criarErro(404, 'Transação não encontrada');
     }
 
     return transacao;
@@ -43,9 +42,7 @@ class TransacaoService {
     });
 
     if (!transacao) {
-      const erro = new Error('Transação não encontrada');
-      erro.statusCode = 404;
-      throw erro;
+      throw criarErro(404, 'Transação não encontrada');
     }
 
     return transacao;

@@ -1,10 +1,10 @@
 import {
   $,
-  hideById,
+  hideElement,
   onEventById,
   setDisabledById,
   setTextById,
-  showById,
+  showElement,
 } from './dom.js';
 
 // Cria um controlador de paginacao reutilizavel para qualquer listagem.
@@ -47,11 +47,11 @@ export function criarPaginacao({
     if (!container || !btnAnterior || !btnProximo || !info) return;
 
     if (totalItens <= limit) {
-      hideById(containerId);
+      hideElement(container);
       return;
     }
 
-    showById(containerId);
+    showElement(container);
 
     const paginas = totalPaginas();
     setTextById(infoId, `Pagina ${paginaAtual} de ${paginas}`);

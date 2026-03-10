@@ -1,19 +1,73 @@
 import { logout } from './logout.js';
 import { abrirModalConfirmacao, fecharModal } from './modalDeletar.js';
-import { $, addClass, getPaginaAtual, setHTMLById } from './helpers/index.js';
+import {
+  $,
+  addClass,
+  getPaginaAtual,
+  setHTMLById,
+  warn,
+} from './helpers/index.js';
 
 const MENU_CACHE_KEY = 'menuHtmlCacheV1';
+const MENU_MAX_TENTATIVAS = 2;
 
-async function obterHtmlMenu() {
-  const htmlEmCache = sessionStorage.getItem(MENU_CACHE_KEY);
+function lerMenuDoCache() {
+  try {
+    return sessionStorage.getItem(MENU_CACHE_KEY);
+  } catch (error) {
+    warn('Nao foi possivel ler cache do menu', 'menu', error);
+    return null;
+  }
+}
+
+function salvarMenuNoCache(html) {
+  try {
+    sessionStorage.setItem(MENU_CACHE_KEY, html);
+  } catch (error) {
+    warn('Nao foi possivel salvar cache do menu', 'menu', error);
+  }
+}
+
+async function carregarHtmlMenu() {
+  const htmlEmCache = lerMenuDoCache();
   if (htmlEmCache) {
     return htmlEmCache;
   }
 
-  const res = await fetch('/html/menu.html');
-  const html = await res.text();
-  sessionStorage.setItem(MENU_CACHE_KEY, html);
-  return html;
+  let ultimoErro = null;
+
+  for (let tentativa = 1; tentativa <= MENU_MAX_TENTATIVAS; tentativa += 1) {
+    try {
+      const res = await fetch('/html/menu.html', { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error(`Falha ao buscar menu (HTTP ${res.status})`);
+      }
+
+      const html = await res.text();
+      if (!html || !html.trim()) {
+        throw new Error('HTML do menu veio vazio');
+      }
+
+      salvarMenuNoCache(html);
+      return html;
+    } catch (error) {
+      ultimoErro = error;
+    }
+  }
+
+  throw ultimoErro || new Error('Nao foi possivel carregar menu');
+}
+
+function renderizarFallbackMenu(menuDiv) {
+  if (!menuDiv) {
+    return;
+  }
+
+  menuDiv.innerHTML = `
+    <div class="sidebar">
+      <div class="menu-fallback">Nao foi possivel carregar o menu. Recarregue a pagina.</div>
+    </div>
+  `;
 }
 
 // Adiciona menu de navegação ao topo da página
@@ -28,8 +82,13 @@ export async function adicionarMenu() {
 
   // Reutiliza menu já renderizado para evitar trabalho duplicado.
   if (!menuDiv.querySelector('.sidebar')) {
-    const html = await obterHtmlMenu();
-    setHTMLById('menu', html);
+    try {
+      const html = await carregarHtmlMenu();
+      setHTMLById('menu', html);
+    } catch (error) {
+      renderizarFallbackMenu(menuDiv);
+      throw error;
+    }
   }
 
   // Destaca o item ativo conforme a página atual.

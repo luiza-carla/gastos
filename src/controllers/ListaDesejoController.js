@@ -23,10 +23,6 @@ function buscarItemDoUsuario(itemId, usuarioId) {
   );
 }
 
-function responderItemNaoEncontrado(res) {
-  return res.status(404).json({ mensagem: MENSAGEM_ITEM_NAO_ENCONTRADO });
-}
-
 function montarUpdateData(body) {
   const { titulo, valor, categoria, tipoDespesa, tags } = body;
   const updateData = {};
@@ -139,7 +135,7 @@ class ListaDesejoController {
     );
 
     if (!item) {
-      return responderItemNaoEncontrado(res);
+      throw criarErro(404, MENSAGEM_ITEM_NAO_ENCONTRADO);
     }
 
     // Registra no histórico
@@ -164,7 +160,7 @@ class ListaDesejoController {
     });
 
     if (!item) {
-      return responderItemNaoEncontrado(res);
+      throw criarErro(404, MENSAGEM_ITEM_NAO_ENCONTRADO);
     }
 
     // Registra no histórico
@@ -183,7 +179,7 @@ class ListaDesejoController {
     const item = await buscarItemDoUsuario(req.params.id, req.user.id);
 
     if (!item) {
-      return responderItemNaoEncontrado(res);
+      throw criarErro(404, MENSAGEM_ITEM_NAO_ENCONTRADO);
     }
 
     const { conta, valor, status, data } = req.body;
@@ -192,11 +188,11 @@ class ListaDesejoController {
     const fonteSaldo = conta === 'carteira' ? 'carteira' : 'conta';
 
     if (!conta) {
-      return res.status(400).json({ mensagem: 'Conta é obrigatória' });
+      throw criarErro(400, 'Conta é obrigatória');
     }
 
     if (!valorFinal || valorFinal <= 0) {
-      return res.status(400).json({ mensagem: 'Valor inválido' });
+      throw criarErro(400, 'Valor inválido');
     }
 
     if (statusFinal === 'pago') {

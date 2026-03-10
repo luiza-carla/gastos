@@ -56,18 +56,6 @@ export function getPaginaAtual(fallback = '') {
   return window.location.pathname.split('/').pop() || fallback;
 }
 
-// Mostra elemento por ID
-export function showById(id) {
-  const el = $(id);
-  if (el) el.style.display = '';
-}
-
-// Oculta elemento por ID
-export function hideById(id) {
-  const el = $(id);
-  if (el) el.style.display = 'none';
-}
-
 // Ativa ou desativa elemento por ID
 export function setDisabledById(id, disabled) {
   const el = $(id);
@@ -84,15 +72,6 @@ export function showModal() {
 export function hideModal() {
   const modal = document.getElementById('modalGlobal');
   if (modal) modal.style.display = 'none';
-}
-
-// Adiciona arquivo CSS se ainda nao existir
-export function addCSS(href) {
-  if (document.querySelector(`link[href="${href}"]`)) return;
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = href;
-  document.head.appendChild(link);
 }
 
 // Adiciona evento a elemento por ID

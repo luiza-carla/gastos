@@ -4,16 +4,16 @@ import {
   formatarValor,
   removeClass,
   setTextById,
-  showById,
-  hideById,
+  showElement,
+  hideElement,
   $,
 } from './helpers/index.js';
+import { mostrarNotificacao } from './notification.js';
 
 // Carrega resumo financeiro do mês
 export async function carregarResumo() {
   try {
     const dados = await apiFetch(window.location.origin + '/resumo');
-    console.log('RESUMO RECEBIDO:', dados);
 
     setTextById('saldo', formatarValor(dados.saldo));
     setTextById('totalSalarios', formatarValor(dados.salarios));
@@ -22,8 +22,8 @@ export async function carregarResumo() {
     setTextById('totalEntradas', formatarValor(dados.entradas));
     setTextById('totalSaidas', formatarValor(dados.saidas));
     setTextById('saldoFinal', formatarValor(dados.saldoFinal ?? dados.saldo));
-  } catch (erro) {
-    console.error('Erro ao carregar resumo:', erro);
+  } catch {
+    mostrarNotificacao('Erro ao carregar resumo', 'erro');
   }
 }
 
@@ -54,9 +54,9 @@ async function abrirProjecao() {
     }
 
     // Exibe modal com projeção
-    showById('modalProjecao');
-  } catch (erro) {
-    console.error('Erro ao carregar projeção:', erro);
+    showElement($('modalProjecao'));
+  } catch {
+    mostrarNotificacao('Erro ao carregar projeção', 'erro');
   }
 }
 
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   if (fechar) {
     fechar.addEventListener('click', () => {
-      hideById('modalProjecao');
+      hideElement($('modalProjecao'));
     });
   }
 });

@@ -1,6 +1,7 @@
 const Usuario = require('../models/Usuario');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { criarErro } = require('../utils/errorHelpers');
 
 class UsuarioService {
   // Gera token JWT padrão para autenticação
@@ -30,9 +31,7 @@ class UsuarioService {
     // Valida se email já existe
     const usuarioExistente = await Usuario.findOne({ email });
     if (usuarioExistente) {
-      const erro = new Error('Email já cadastrado');
-      erro.statusCode = 400;
-      throw erro;
+      throw criarErro(400, 'Email já cadastrado');
     }
 
     // Cria hash da senha
@@ -57,17 +56,13 @@ class UsuarioService {
     // Busca usuário por email
     const usuario = await Usuario.findOne({ email });
     if (!usuario) {
-      const erro = new Error('Credenciais inválidas');
-      erro.statusCode = 400;
-      throw erro;
+      throw criarErro(400, 'Credenciais inválidas');
     }
 
     // Valida senha com hash
     const senhaValida = await bcrypt.compare(senha, usuario.senha);
     if (!senhaValida) {
-      const erro = new Error('Credenciais inválidas');
-      erro.statusCode = 400;
-      throw erro;
+      throw criarErro(400, 'Credenciais inválidas');
     }
 
     const token = this.gerarToken(usuario._id);

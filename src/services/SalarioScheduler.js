@@ -4,6 +4,7 @@ const Categoria = require('../models/Categoria');
 const Conta = require('../models/Conta');
 const Carteira = require('../models/Carteira');
 const { formatarMoeda } = require('../utils/stringHelpers');
+const logger = require('../utils/logger');
 
 // Serviço responsável por agendar e processar salários automaticamente
 class SalarioScheduler {
@@ -15,11 +16,11 @@ class SalarioScheduler {
   iniciar() {
     // Executa agenda de processamento diário
     this.job = cron.schedule('1 0 * * *', async () => {
-      console.log('Verificando salários para processar...');
+      logger.info('Verificando salarios para processar', 'SalarioScheduler');
       await this.processarSalariosDodia();
     });
 
-    console.log('Agendador de salários iniciado');
+    logger.info('Agendador de salarios iniciado', 'SalarioScheduler');
 
     // Executa imediatamente ao iniciar (útil para testes/desenvolvimento)
     this.processarSalariosDodia();
@@ -29,7 +30,7 @@ class SalarioScheduler {
   parar() {
     if (this.job) {
       this.job.stop();
-      console.log('Agendador de salários parado');
+      logger.info('Agendador de salarios parado', 'SalarioScheduler');
     }
   }
 
@@ -44,7 +45,7 @@ class SalarioScheduler {
       const categoriaSalario = await Categoria.findOne({ nome: 'Salário' });
 
       if (!categoriaSalario) {
-        console.log('Categoria Salário não encontrada!');
+        logger.warn('Categoria Salario nao encontrada', 'SalarioScheduler');
         return;
       }
 
@@ -63,11 +64,17 @@ class SalarioScheduler {
         .populate('conta');
 
       if (salarios.length === 0) {
-        console.log(`Nenhum salário para processar no dia ${diaAtual}`);
+        logger.info(
+          `Nenhum salario para processar no dia ${diaAtual}`,
+          'SalarioScheduler'
+        );
         return;
       }
 
-      console.log(`Processando ${salarios.length} salário(s)...`);
+      logger.info(
+        `Processando ${salarios.length} salario(s)`,
+        'SalarioScheduler'
+      );
 
       let processados = 0;
       let erros = 0;
@@ -80,7 +87,10 @@ class SalarioScheduler {
             ultimoProcessamento && new Date(ultimoProcessamento) >= inicioMes;
 
           if (jaProcessadoEsteMes) {
-            console.log(`⏭Salário ${salario._id} já processado este mês`);
+            logger.info(
+              `Salario ${salario._id} ja processado neste mes`,
+              'SalarioScheduler'
+            );
             continue;
           }
 
@@ -97,8 +107,9 @@ class SalarioScheduler {
               : null;
 
             if (!conta) {
-              console.log(
-                `Salário ${salario._id} sem conta válida para processamento`
+              logger.warn(
+                `Salario ${salario._id} sem conta valida para processamento`,
+                'SalarioScheduler'
               );
               continue;
             }
@@ -113,29 +124,36 @@ class SalarioScheduler {
           await salario.save();
 
           processados++;
-          console.log(
-            `Salário processado: ${formatarMoeda(salario.valor)} para usuário ${salario.usuario._id}`
+          logger.info(
+            `Salario processado: ${formatarMoeda(salario.valor)} para usuario ${salario.usuario._id}`,
+            'SalarioScheduler'
           );
         } catch (erro) {
           erros++;
-          console.error(
-            `Erro ao processar salário ${salario._id}:`,
+          logger.error(
+            `Erro ao processar salario ${salario._id}`,
+            'SalarioScheduler',
             erro.message
           );
         }
       }
 
-      console.log(
-        `Processamento concluído: ${processados} sucesso, ${erros} erros`
+      logger.info(
+        `Processamento concluido: ${processados} sucesso, ${erros} erros`,
+        'SalarioScheduler'
       );
     } catch (erro) {
-      console.error('Erro ao processar salários do dia:', erro);
+      logger.error(
+        'Erro ao processar salarios do dia',
+        'SalarioScheduler',
+        erro
+      );
     }
   }
 
   // Força o processamento manual de salários
   async processarManualmente() {
-    console.log('🔧 Processamento manual iniciado...');
+    logger.info('Processamento manual iniciado', 'SalarioScheduler');
     await this.processarSalariosDodia();
   }
 }

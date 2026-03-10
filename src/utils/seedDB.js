@@ -11,6 +11,7 @@ const Categoria = require('../models/Categoria');
 const Transacao = require('../models/Transacao');
 const ListaDesejo = require('../models/ListaDesejo');
 const Historico = require('../models/Historico');
+const logger = require('./logger');
 
 // Importar função de seed de categorias
 const garantirCategoriasPadrao = require('./seedCategoria');
@@ -287,6 +288,45 @@ function gerarSalario(usuarioId, contaId, categoriaSalario) {
   };
 }
 
+function criarSnapshotHistorico(entidade, obj) {
+  if (!obj) {
+    return {
+      valor: faker.number.float({ min: 5, max: 250, precision: 0.01 }),
+      titulo: faker.commerce.productName(),
+    };
+  }
+
+  const snapshot = {
+    titulo: obj.titulo || obj.nome,
+    valor: obj.valor ?? obj.saldo ?? obj.preco,
+  };
+
+  if (entidade === 'transacao' || entidade === 'salario') {
+    snapshot.tipo = obj.tipo;
+    snapshot.status = obj.status;
+    snapshot.data = obj.data;
+    snapshot.categoria = obj.categoria;
+    snapshot.conta = obj.conta || null;
+    snapshot.fonteSaldo = obj.fonteSaldo || 'conta';
+    return snapshot;
+  }
+
+  if (entidade === 'conta') {
+    snapshot.tipo = obj.tipo;
+    snapshot.saldo = obj.saldo;
+    snapshot.ativa = obj.ativa;
+    return snapshot;
+  }
+
+  if (entidade === 'listaDesejo') {
+    snapshot.preco = obj.preco;
+    snapshot.valorEconomizado = obj.valorEconomizado;
+    snapshot.categoria = obj.categoria;
+  }
+
+  return snapshot;
+}
+
 /**
  * Gera um histórico de ação
  */
@@ -307,12 +347,14 @@ function gerarHistorico(usuarioId, entidades) {
     listaDesejo: ['criacao', 'edicao', 'delecao', 'realizacao'],
   };
 
-  // Seleciona uma entidade existente aleatoriamente
-  let entidadeId;
+  // Seleciona uma entidade existente aleatoriamente e pega seus dados
+  let entidadeId, objetoReal;
   if (entidades[entidade] && entidades[entidade].length > 0) {
-    entidadeId = faker.helpers.arrayElement(entidades[entidade])._id;
+    objetoReal = faker.helpers.arrayElement(entidades[entidade]);
+    entidadeId = objetoReal._id;
   } else {
     entidadeId = new mongoose.Types.ObjectId();
+    objetoReal = null;
   }
 
   const acao = faker.helpers.arrayElement(
@@ -321,26 +363,16 @@ function gerarHistorico(usuarioId, entidades) {
 
   const descricaoPadrao = formatarDescricaoHistoricoPadrao(acao, entidade);
 
+  const snapshot = criarSnapshotHistorico(entidade, objetoReal);
+
   return {
     usuario: usuarioId,
     entidade: entidade,
     entidadeId: entidadeId,
     acao: acao,
     descricao: descricaoPadrao,
-    dadosAnteriores:
-      acao !== 'criacao'
-        ? {
-            valor: faker.number.float({ min: 5, max: 250, precision: 0.01 }),
-            titulo: faker.commerce.productName(),
-          }
-        : null,
-    dadosNovos:
-      acao !== 'delecao'
-        ? {
-            valor: faker.number.float({ min: 5, max: 250, precision: 0.01 }),
-            titulo: faker.commerce.productName(),
-          }
-        : null,
+    dadosAnteriores: acao !== 'criacao' ? snapshot : null,
+    dadosNovos: acao !== 'delecao' ? snapshot : null,
     metadata: {
       ip: faker.internet.ip(),
       userAgent: faker.internet.userAgent(),
@@ -441,9 +473,9 @@ async function seedDatabase(options = {}) {
       Historico
     );
 
-    console.log('Seed executado com sucesso!');
+    logger.info('Seed executado com sucesso', 'seedDB');
   } catch (error) {
-    console.error('Erro ao popular banco:', error);
+    logger.error('Erro ao popular banco', 'seedDB', error);
     throw error;
   }
 }
@@ -453,7 +485,7 @@ if (require.main === module) {
   require('dotenv').config();
 
   if (!process.env.MONGO_URL) {
-    console.error('MONGO_URL não configurado no .env');
+    logger.error('MONGO_URL nao configurado no .env', 'seedDB');
     process.exit(1);
   }
 
@@ -466,7 +498,7 @@ if (require.main === module) {
       process.exit(0);
     })
     .catch((error) => {
-      console.error('Erro:', error);
+      logger.error('Erro ao executar seed', 'seedDB', error);
       process.exit(1);
     });
 }

@@ -24,8 +24,6 @@ export async function verificarAutenticacao() {
 
   // Carrega menu se autenticado
   if (token) {
-    adicionarMenu().catch((error) => {
-      console.error('Falha ao carregar menu:', error);
-    });
+    adicionarMenu().catch(() => undefined);
   }
 }

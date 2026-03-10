@@ -20,8 +20,6 @@ import {
   criarCardsHTML,
   criarBotoesAcao,
   calcularTotalItens,
-  showById,
-  hideById,
   showElement,
   hideElement,
   $,
@@ -75,7 +73,7 @@ function resetarFormularioTransacao(
 ) {
   resetarTagsFormulario(tags);
   form.reset();
-  hideById('tipoDespesaContainer');
+  hideElement($('tipoDespesaContainer'));
   tipoDespesaSelect.value = '';
   hideElement(parcelasContainer);
   limparCategoriaSelecionada();
@@ -96,9 +94,9 @@ export async function criarTransacao(formId = 'formTransacao') {
   // Controla exibicao de campos condicionais
   tipoSelect?.addEventListener('change', () => {
     if (tipoSelect.value === 'saida') {
-      showById('tipoDespesaContainer');
+      showElement($('tipoDespesaContainer'));
     } else {
-      hideById('tipoDespesaContainer');
+      hideElement($('tipoDespesaContainer'));
       tipoDespesaSelect.value = '';
     }
   });

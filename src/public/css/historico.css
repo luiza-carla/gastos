@@ -15,6 +15,25 @@
   font-size: 14px;
 }
 
+.aviso-historico {
+  background: var(--cinza-chip-bg);
+  border: 1px solid var(--cinza-chip-borda);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--cinza-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.aviso-historico i {
+  flex-shrink: 0;
+  font-size: 18px;
+}
+
 /* Blocos internos do container principal */
 .filters-section,
 .historico-section {
@@ -296,6 +315,56 @@
 .empty-state {
   text-align: center;
   color: var(--cinza-texto);
+}
+
+.historico-objeto {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--cinza-linha);
+}
+
+.historico-objeto-titulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cinza-2);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.historico-objeto-conteudo {
+  background: var(--cinza-claro);
+  border: 1px solid var(--cinza-linha);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.objeto-campo {
+  font-size: 13px;
+  color: var(--cinza-1);
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+.objeto-campo:last-child {
+  margin-bottom: 0;
+}
+
+.objeto-campo strong {
+  color: var(--cinza-2);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.tag-badge {
+  display: inline-block;
+  background: var(--rosa-claro);
+  color: var(--cinza-1);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-right: 4px;
 }
 
 .loading {
